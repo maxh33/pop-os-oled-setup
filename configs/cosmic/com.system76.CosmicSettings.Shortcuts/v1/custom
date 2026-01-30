@@ -1,0 +1,16 @@
+{
+    (
+        modifiers: [
+            Super,
+        ],
+        key: "d",
+        description: Some("Hide all normal windows"),
+    ): Spawn("Hide all normal windows"),
+    (
+        modifiers: [
+            Super,
+        ],
+        key: "t",
+        description: Some("Open Kitty Terminal"),
+    ): Spawn("kitty"),
+}
