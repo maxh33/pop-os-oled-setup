@@ -1,0 +1,6 @@
+/home/max/.nvm/versions/node/v24.13.0/lib
+├── @github/copilot@0.0.392
+├── @google/gemini-cli@0.25.1
+├── corepack@0.34.5
+└── npm@11.6.2
+
