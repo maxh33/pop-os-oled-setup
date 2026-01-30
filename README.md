@@ -17,7 +17,7 @@ If you're experiencing **audio distortion/crackling** when using NVIDIA HDMI out
 
 ### 1. Clone this repo
 ```bash
-git clone https://github.com/YOUR_USERNAME/pop-os-oled-setup.git
+git clone https://github.com/maxh33/pop-os-oled-setup
 cd pop-os-oled-setup
 ```
 
