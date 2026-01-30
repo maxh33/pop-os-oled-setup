@@ -1,0 +1,19 @@
+# SSH Configuration Template
+# Copy to ~/.ssh/config and customize
+
+# Use 1Password SSH agent (optional)
+Host *
+    IdentityAgent ~/.1password/agent.sock
+
+# Example server
+Host myserver
+    HostName your.server.ip
+    User your_username
+    IdentityFile ~/.ssh/id_ed25519
+    IdentitiesOnly yes
+
+# GitHub
+Host github.com
+    HostName github.com
+    User git
+    IdentityFile ~/.ssh/id_ed25519
