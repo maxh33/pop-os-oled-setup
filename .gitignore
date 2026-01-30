@@ -1,0 +1,30 @@
+# Logs
+*.log
+*.bak
+
+# Secrets and credentials
+.env
+.env.*
+*credentials*
+*secret*
+*.pem
+*.key
+oauth_creds.json
+secrets.json
+
+# SSH keys
+id_rsa*
+id_ed25519*
+id_dsa*
+*.pub
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
