@@ -1,0 +1,16 @@
+# HDMI output via ALSA plug (format conversion)
+pcm.hdmi_out {
+    type plug
+    slave {
+        pcm "hw:NVidia,3"
+        format S16_LE
+        rate 48000
+        channels 2
+    }
+}
+
+# Default PCM for apps that bypass PipeWire
+pcm.!default {
+    type plug
+    slave.pcm "hdmi_out"
+}
