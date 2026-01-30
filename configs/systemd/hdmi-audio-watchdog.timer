@@ -1,0 +1,10 @@
+[Unit]
+Description=Run HDMI Audio Watchdog every 30 seconds
+
+[Timer]
+OnBootSec=10s
+OnUnitActiveSec=30s
+AccuracySec=5s
+
+[Install]
+WantedBy=timers.target

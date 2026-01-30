@@ -1,0 +1,13 @@
+[Unit]
+Description=Enable NVIDIA HDMI Audio after PipeWire starts
+After=pipewire.service wireplumber.service
+Wants=pipewire.service
+
+[Service]
+Type=oneshot
+ExecStartPre=/bin/sleep 3
+ExecStart=/home/max/.local/bin/hdmi-audio-fix.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=default.target

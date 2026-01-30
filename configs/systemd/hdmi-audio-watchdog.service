@@ -1,0 +1,6 @@
+[Unit]
+Description=HDMI Audio Watchdog - fixes audio when TV turns on/off
+
+[Service]
+Type=oneshot
+ExecStart=/home/max/.local/bin/hdmi-audio-watchdog.sh
