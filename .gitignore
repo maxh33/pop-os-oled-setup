@@ -28,3 +28,9 @@ Thumbs.db
 *~
 .vscode/
 .idea/
+
+# Sensitive environment variables and credentials
+.env.local
+.env*.local
+credentials.json
+*.secret
