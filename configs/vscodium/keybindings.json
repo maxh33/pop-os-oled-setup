@@ -1,0 +1,8 @@
+[
+    // Terminal link handling
+    {
+        "key": "ctrl+click",
+        "command": "editor.action.openLink",
+        "when": "terminalFocus"
+    }
+]

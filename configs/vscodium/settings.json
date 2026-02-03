@@ -1,0 +1,16 @@
+{
+    "workbench.colorTheme": "AMOLED Github Theme",
+    "claudeCode.preferredLocation": "panel",
+
+    // Link clicking settings
+    "editor.links": true,
+    "editor.multiCursorModifier": "alt",
+
+    // Terminal link settings
+    "terminal.integrated.enableFileLinks": "on",
+    "terminal.integrated.shellIntegration.enabled": true,
+    "terminal.integrated.linkDetectionStrategy": "path",
+    "terminal.integrated.allowChords": true,
+    "terminal.integrated.customGlyph": true,
+    "files.autoSave": "onFocusChange"
+}
