@@ -20,12 +20,9 @@ HISTORY_SINCE=""      # Scan since this ref (branch/tag/commit)
 SCAN_ALL_HISTORY=false # Scan entire history
 # Models to try in order (fallback if quota exceeded)
 GEMINI_MODELS=("gemini-2.5-flash" "gemini-2.5-pro" "gemini-2.0-flash" "gemini-2.0-flash-lite")
-# API keys to try (primary from env, fallbacks hardcoded)
-GEMINI_API_KEYS=(
-    "${GEMINI_API_KEY:-}"
-    "***REVOKED_API_KEY***"
-    "***REVOKED_API_KEY***"
-)
+# API key from environment variable ONLY - no hardcoded fallbacks!
+# Set with: export GEMINI_API_KEY='your-key-here'
+GEMINI_API_KEYS=("${GEMINI_API_KEY:-}")
 AUTH_METHOD=""  # Will be set to "api_key" or "oauth"
 ACTIVE_API_KEY=""  # The key that worked
 
@@ -35,6 +32,39 @@ YELLOW='\033[1;33m'
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
+
+# --- Pre-flight self-check: ensure this script doesn't contain hardcoded secrets ---
+check_self_for_secrets() {
+    local script_path="${BASH_SOURCE[0]}"
+    local found_secrets=false
+
+    # Check for Google API keys (excluding pattern definitions and this function)
+    if grep -E 'AIza[0-9A-Za-z_-]{35}' "$script_path" 2>/dev/null | grep -v "AIza\[0-9A-Za-z" | grep -qv 'check_self_for_secrets'; then
+        echo -e "${RED}CRITICAL: This script contains hardcoded Google API keys!${NC}" >&2
+        found_secrets=true
+    fi
+
+    # Check for AWS keys
+    if grep -qE 'AKIA[0-9A-Z]{16}' "$script_path" 2>/dev/null; then
+        echo -e "${RED}CRITICAL: This script contains hardcoded AWS keys!${NC}" >&2
+        found_secrets=true
+    fi
+
+    # Check for GitHub tokens
+    if grep -qE 'ghp_[0-9a-zA-Z]{36}' "$script_path" 2>/dev/null; then
+        echo -e "${RED}CRITICAL: This script contains hardcoded GitHub tokens!${NC}" >&2
+        found_secrets=true
+    fi
+
+    if [[ "$found_secrets" == "true" ]]; then
+        echo -e "${RED}Remove hardcoded secrets before using this script!${NC}" >&2
+        echo -e "${YELLOW}Use environment variables instead: export GEMINI_API_KEY='your-key'${NC}" >&2
+        exit 1
+    fi
+}
+
+# Run self-check immediately
+check_self_for_secrets
 
 # --- Sensitive content patterns ---
 SENSITIVE_PATTERNS=(
@@ -322,11 +352,6 @@ scan_with_native() {
             continue
         fi
 
-        # Skip the script itself
-        if [[ "$current_file" == *"gemini-git-helper"* ]]; then
-            continue
-        fi
-
         # Check for added lines (+ prefix in diff)
         if [[ "$line" =~ ^\+ ]]; then
             # Check against patterns
@@ -442,37 +467,21 @@ check_git_repo() {
 
 # Check API keys are available
 check_api_keys() {
-    # Check if any API keys are available (from env or hardcoded)
-    local has_keys=false
-
-    if [ -n "$GEMINI_API_KEY" ]; then
-        has_keys=true
-        print_success "API key found in environment"
-    fi
-
-    # Check hardcoded keys
-    for key in "${GEMINI_API_KEYS[@]}"; do
-        if [ -n "$key" ]; then
-            has_keys=true
-            break
-        fi
-    done
-
-    if [ "$has_keys" = false ]; then
-        print_error "No API keys available!"
+    # API key MUST be set via environment variable - no hardcoded fallbacks!
+    if [ -z "${GEMINI_API_KEY:-}" ]; then
+        print_error "GEMINI_API_KEY environment variable not set!"
         echo ""
         echo "Please set up an API key:"
         echo "  export GEMINI_API_KEY='your-api-key'"
         echo "  Get a key at: https://aistudio.google.com/app/apikey"
         echo ""
+        echo "Or use --local mode for offline analysis (no API needed):"
+        echo "  $(basename "$0") --local"
+        echo ""
         exit 1
     fi
 
-    local key_count=0
-    for key in "${GEMINI_API_KEYS[@]}"; do
-        [ -n "$key" ] && key_count=$((key_count + 1))
-    done
-    print_success "Found $key_count API key(s) to try"
+    print_success "API key found in environment"
 }
 
 # Collect all git changes
@@ -572,11 +581,6 @@ scan_sensitive_content() {
 
         # Skip binary files
         if file "$file" | grep -q "binary"; then
-            continue
-        fi
-
-        # Skip this script itself (contains patterns as detection strings)
-        if [[ "$file" == *"gemini-git-helper"* ]]; then
             continue
         fi
 
