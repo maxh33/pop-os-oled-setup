@@ -1,0 +1,13 @@
+[Unit]
+Description=VoxType Voice Dictation Daemon
+After=graphical-session.target pipewire.service
+Wants=pipewire.service
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/voxtype daemon
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target
