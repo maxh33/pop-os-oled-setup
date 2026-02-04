@@ -15,6 +15,7 @@ OAUTH_CREDS_FILE="/home/max/.gemini/oauth_creds.json"
 GEMINI_API_BASE="https://generativelanguage.googleapis.com/v1beta/models"
 USE_LOCAL_ONLY=false  # Set to true with --local flag
 SCAN_HISTORY=false    # Set to true with --scan-history flag
+PRE_COMMIT_MODE=false # Set to true with --pre-commit flag (secrets-only scan)
 HISTORY_COMMITS=50    # Default number of commits to scan
 HISTORY_SINCE=""      # Scan since this ref (branch/tag/commit)
 SCAN_ALL_HISTORY=false # Scan entire history
@@ -40,19 +41,55 @@ check_self_for_secrets() {
 
     # Check for Google API keys (excluding pattern definitions and this function)
     if grep -E 'AIza[0-9A-Za-z_-]{35}' "$script_path" 2>/dev/null | grep -v "AIza\[0-9A-Za-z" | grep -qv 'check_self_for_secrets'; then
-        echo -e "${RED}CRITICAL: This script contains hardcoded Google API keys!${NC}" >&2
+        echo -e "${RED}CRITICAL: Hardcoded Google API key detected!${NC}" >&2
         found_secrets=true
     fi
 
     # Check for AWS keys
     if grep -qE 'AKIA[0-9A-Z]{16}' "$script_path" 2>/dev/null; then
-        echo -e "${RED}CRITICAL: This script contains hardcoded AWS keys!${NC}" >&2
+        echo -e "${RED}CRITICAL: Hardcoded AWS key detected!${NC}" >&2
         found_secrets=true
     fi
 
-    # Check for GitHub tokens
-    if grep -qE 'ghp_[0-9a-zA-Z]{36}' "$script_path" 2>/dev/null; then
-        echo -e "${RED}CRITICAL: This script contains hardcoded GitHub tokens!${NC}" >&2
+    # Check for GitHub tokens (all types: ghp_, gho_, ghu_, ghs_, ghr_)
+    if grep -qE 'gh[pousr]_[0-9a-zA-Z]{36}' "$script_path" 2>/dev/null; then
+        echo -e "${RED}CRITICAL: Hardcoded GitHub token detected!${NC}" >&2
+        found_secrets=true
+    fi
+
+    # Check for Stripe keys
+    if grep -qE '[sp]k_live_[0-9a-zA-Z]{24}' "$script_path" 2>/dev/null; then
+        echo -e "${RED}CRITICAL: Hardcoded Stripe key detected!${NC}" >&2
+        found_secrets=true
+    fi
+
+    # Check for Slack tokens
+    if grep -qE 'xox[baprs]-[0-9]{10,13}-[0-9]{10,13}[a-zA-Z0-9-]*' "$script_path" 2>/dev/null; then
+        echo -e "${RED}CRITICAL: Hardcoded Slack token detected!${NC}" >&2
+        found_secrets=true
+    fi
+
+    # Check for SendGrid keys
+    if grep -qE 'SG\.[a-zA-Z0-9_-]{22}\.[a-zA-Z0-9_-]{43}' "$script_path" 2>/dev/null; then
+        echo -e "${RED}CRITICAL: Hardcoded SendGrid key detected!${NC}" >&2
+        found_secrets=true
+    fi
+
+    # Check for Twilio keys
+    if grep -qE 'SK[0-9a-fA-F]{32}' "$script_path" 2>/dev/null; then
+        echo -e "${RED}CRITICAL: Hardcoded Twilio key detected!${NC}" >&2
+        found_secrets=true
+    fi
+
+    # Check for private keys (exclude pattern definitions - lines starting with single quote)
+    if grep -E 'BEGIN (RSA|OPENSSH|EC|PGP) PRIVATE KEY' "$script_path" 2>/dev/null | grep -qvE "^[[:space:]]*'"; then
+        echo -e "${RED}CRITICAL: Hardcoded private key detected!${NC}" >&2
+        found_secrets=true
+    fi
+
+    # Check for JWT tokens (excluding pattern definitions)
+    if grep -E 'eyJ[A-Za-z0-9_-]*\.eyJ[A-Za-z0-9_-]*\.[A-Za-z0-9_-]*' "$script_path" 2>/dev/null | grep -qv 'eyJ\[A-Za-z0-9'; then
+        echo -e "${RED}CRITICAL: Hardcoded JWT token detected!${NC}" >&2
         found_secrets=true
     fi
 
@@ -581,6 +618,11 @@ scan_sensitive_content() {
 
         # Skip binary files
         if file "$file" | grep -q "binary"; then
+            continue
+        fi
+
+        # Skip this script itself (contains patterns for legitimate reasons)
+        if [[ "$(basename "$file")" == "gemini-git-helper.sh" ]]; then
             continue
         fi
 
@@ -1126,12 +1168,13 @@ display_results() {
 
 # --- Help ---
 show_help() {
-    echo "Gemini Git Helper v2.2"
+    echo "Gemini Git Helper v2.3"
     echo ""
     echo "Usage: $(basename "$0") [OPTIONS]"
     echo ""
     echo "Options:"
     echo "  --local, -l         Use local analysis only (no API call)"
+    echo "  --pre-commit        Fast secrets-only scan for git hooks (exit 1 if found)"
     echo "  --scan-history, -s  Scan commit history for secrets"
     echo "  --commits N         Number of commits to scan (default: 50)"
     echo "  --all-history       Scan entire git history (slower)"
@@ -1169,6 +1212,11 @@ main() {
                 SCAN_HISTORY=true
                 shift
                 ;;
+            --pre-commit)
+                PRE_COMMIT_MODE=true
+                USE_LOCAL_ONLY=true
+                shift
+                ;;
             --commits)
                 if [ -z "$2" ] || [[ "$2" =~ ^- ]]; then
                     print_error "--commits requires a number"
@@ -1201,9 +1249,20 @@ main() {
         esac
     done
 
+    # Pre-commit hook mode (fast secrets-only scan)
+    if [ "$PRE_COMMIT_MODE" = true ]; then
+        check_git_repo
+        collect_git_changes
+        scan_sensitive_content
+        if [ "$SENSITIVE_FOUND" = true ]; then
+            exit 1
+        fi
+        exit 0
+    fi
+
     # History scanning mode
     if [ "$SCAN_HISTORY" = true ]; then
-        print_header "Gemini Git Helper v2.2 (History Scan)"
+        print_header "Gemini Git Helper v2.3 (History Scan)"
         check_git_repo
         scan_commit_history
         exit $?
@@ -1211,9 +1270,9 @@ main() {
 
     # Normal commit helper mode
     if [ "$USE_LOCAL_ONLY" = true ]; then
-        print_header "Gemini Git Helper v2.2 (Local Mode)"
+        print_header "Gemini Git Helper v2.3 (Local Mode)"
     else
-        print_header "Gemini Git Helper v2.2"
+        print_header "Gemini Git Helper v2.3"
     fi
 
     check_git_repo

@@ -34,3 +34,4 @@ Thumbs.db
 .env*.local
 credentials.json
 *.secret
+..bfg-report/

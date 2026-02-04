@@ -2,24 +2,28 @@
 
 ## Custom Scripts
 
-### gemini-git-helper.sh (v2.2)
+### gemini-git-helper.sh (v2.3)
 
 **Location:** `/home/max/bin/gemini-git-helper.sh`
 **Usage:** Run `gemini-git-helper.sh` in any git repository
 
 AI-powered git commit assistant that:
+- Self-check blocks execution if script contains hardcoded secrets
 - Scans for sensitive content (API keys, passwords, tokens)
-- **NEW:** Scans commit history for leaked secrets (uses gitleaks/trufflehog)
+- Scans commit history for leaked secrets (uses gitleaks/trufflehog)
 - Validates .gitignore/.dockerignore patterns
 - Groups changes by topic
 - Suggests conventional commit messages using Gemini API
-- Multi-API-key and multi-model fallback support
+- Requires `GEMINI_API_KEY` environment variable (no hardcoded keys)
+
+**Note:** This is a reference copy for system recovery. The active copy is at `/home/max/bin/gemini-git-helper.sh`.
 
 #### Command-Line Options
 
 | Flag | Description |
 |------|-------------|
 | `--local, -l` | Use local analysis only (no API call) |
+| `--pre-commit` | Fast secrets-only scan for git hooks (exit 1 if found) |
 | `--scan-history, -s` | Scan commit history for secrets |
 | `--commits N` | Number of commits to scan (default: 50) |
 | `--all-history` | Scan entire git history |
@@ -105,9 +109,20 @@ node_modules
 
 #### Configuration
 
-- **API Keys**: Set `GEMINI_API_KEY` env var or edit hardcoded keys in script
+- **API Keys**: Set `GEMINI_API_KEY` environment variable (required, no hardcoded fallbacks)
 - **Models**: Tries gemini-2.5-flash, gemini-2.5-pro, gemini-2.0-flash, gemini-2.0-flash-lite in order
-- **OAuth**: Uses `/home/max/.gemini/oauth_creds.json` if available
+
+#### Global Pre-Commit Hook
+
+A global pre-commit hook is enabled that runs `gemini-git-helper.sh --pre-commit` before every commit in all git repos.
+
+**Location:** `/home/max/bin/git-hooks/pre-commit`
+**Enabled via:** `git config --global core.hooksPath /home/max/bin/git-hooks/`
+
+The hook:
+- Blocks commits containing secrets (API keys, tokens, passwords)
+- Runs automatically in ALL git repos
+- Can be bypassed with `git commit --no-verify` (not recommended)
 
 #### Example Output
 
