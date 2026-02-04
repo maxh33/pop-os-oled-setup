@@ -2,7 +2,7 @@
 
 ## Custom Scripts
 
-### gemini-git-helper.sh (v2.3)
+### gemini-git-helper.sh (v2.4)
 
 **Location:** `/home/max/bin/gemini-git-helper.sh`
 **Usage:** Run `gemini-git-helper.sh` in any git repository
@@ -24,6 +24,7 @@ AI-powered git commit assistant that:
 |------|-------------|
 | `--local, -l` | Use local analysis only (no API call) |
 | `--pre-commit` | Fast secrets-only scan for git hooks (exit 1 if found) |
+| `--pre-push RANGE` | Scan commits being pushed (for pre-push hook) |
 | `--scan-history, -s` | Scan commit history for secrets |
 | `--commits N` | Number of commits to scan (default: 50) |
 | `--all-history` | Scan entire git history |
@@ -123,6 +124,27 @@ The hook:
 - Blocks commits containing secrets (API keys, tokens, passwords)
 - Runs automatically in ALL git repos
 - Can be bypassed with `git commit --no-verify` (not recommended)
+
+#### Global Pre-Push Hook
+
+A global pre-push hook is enabled that runs before you push commits to a remote repository.
+
+**Location:** `/home/max/bin/git-hooks/pre-push`
+
+The hook:
+- Scans the range of commits you are about to push
+- Blocks the push if any secrets are found in those commits
+- Provides a final safety net before secrets leave your machine
+- Can be bypassed with `git push --no-verify` (EXTREMELY not recommended)
+
+#### Defense-in-Depth Chain
+
+The script creates a layered security approach to prevent secrets from being leaked:
+
+1.  **Self-check:** Script refuses to run if it contains hardcoded secrets.
+2.  **Pre-commit hook:** Blocks any new secrets from being committed.
+3.  **Pre-push hook:** Blocks any secrets that bypassed the pre-commit hook from being pushed.
+4.  **--scan-history:** Allows you to audit the entire repository for any secrets that were missed.
 
 #### Example Output
 

@@ -16,6 +16,8 @@ GEMINI_API_BASE="https://generativelanguage.googleapis.com/v1beta/models"
 USE_LOCAL_ONLY=false  # Set to true with --local flag
 SCAN_HISTORY=false    # Set to true with --scan-history flag
 PRE_COMMIT_MODE=false # Set to true with --pre-commit flag (secrets-only scan)
+PRE_PUSH_MODE=false   # Set to true with --pre-push flag (scan commits being pushed)
+PRE_PUSH_RANGE=""     # Commit range for pre-push scan
 HISTORY_COMMITS=50    # Default number of commits to scan
 HISTORY_SINCE=""      # Scan since this ref (branch/tag/commit)
 SCAN_ALL_HISTORY=false # Scan entire history
@@ -1166,15 +1168,95 @@ display_results() {
     print_warning "Never commit sensitive data like API keys, passwords, or tokens!"
 }
 
+# --- Pre-push scan function ---
+run_pre_push_scan() {
+    local range="$1"
+
+    # Detect scanner (gitleaks only for hooks - speed is critical)
+    if command -v gitleaks &> /dev/null; then
+        SCANNER_TOOL="gitleaks"
+    else
+        SCANNER_TOOL="native"
+    fi
+
+    local found_secrets=false
+
+    if [ "$SCANNER_TOOL" = "gitleaks" ]; then
+        # Use gitleaks for fast scanning
+        local output
+        local exit_code=0
+
+        # For new branches, scan all commits; for existing, scan the range
+        if [[ "$range" =~ \.\. ]]; then
+            # Range format: remote_sha..local_sha
+            output=$(gitleaks detect --source . --log-opts="$range" -v 2>&1) || exit_code=$?
+        else
+            # Single SHA (new branch) - scan that commit and its ancestors not on remote
+            output=$(gitleaks detect --source . --log-opts="$range" -v 2>&1) || exit_code=$?
+        fi
+
+        # Check for secrets
+        if echo "$output" | grep -q "no leaks found"; then
+            found_secrets=false
+        elif [ "$exit_code" -eq 0 ]; then
+            found_secrets=false
+        else
+            # Actual secrets found
+            echo -e "${RED}Secrets detected in commits being pushed:${NC}"
+            echo "$output" | grep -E "(Secret|File|Commit|Line)" | head -20
+            found_secrets=true
+        fi
+    else
+        # Native fallback - scan diff of commits being pushed
+        local temp_file=$(mktemp)
+
+        if [[ "$range" =~ \.\. ]]; then
+            git log -p "$range" > "$temp_file" 2>/dev/null
+        else
+            git log -p "$range" -n 50 > "$temp_file" 2>/dev/null
+        fi
+
+        # Build combined pattern
+        local combined_pattern=""
+        for pattern in "${SENSITIVE_PATTERNS[@]}"; do
+            if [ -n "$combined_pattern" ]; then
+                combined_pattern+="|"
+            fi
+            combined_pattern+="$pattern"
+        done
+
+        # Scan for patterns in added lines
+        if grep -E "^\+" "$temp_file" 2>/dev/null | grep -qE "$combined_pattern" 2>/dev/null; then
+            # Filter out placeholders
+            local real_matches=$(grep -E "^\+" "$temp_file" 2>/dev/null | grep -E "$combined_pattern" 2>/dev/null | grep -vE '(your_|changeme|placeholder|CHANGEME|YOUR_|xxx|XXX|<.*>|\$\{)' || true)
+            if [ -n "$real_matches" ]; then
+                echo -e "${RED}Secrets detected in commits being pushed:${NC}"
+                echo "$real_matches" | head -10
+                found_secrets=true
+            fi
+        fi
+
+        rm -f "$temp_file"
+    fi
+
+    if [ "$found_secrets" = true ]; then
+        return 1
+    fi
+
+    echo -e "${GREEN}✓${NC} No secrets detected in commits"
+    return 0
+}
+
 # --- Help ---
 show_help() {
-    echo "Gemini Git Helper v2.3"
+    echo "Gemini Git Helper v2.4"
     echo ""
     echo "Usage: $(basename "$0") [OPTIONS]"
     echo ""
     echo "Options:"
     echo "  --local, -l         Use local analysis only (no API call)"
     echo "  --pre-commit        Fast secrets-only scan for git hooks (exit 1 if found)"
+    echo "  --pre-push RANGE    Scan commits being pushed (for pre-push hook)"
     echo "  --scan-history, -s  Scan commit history for secrets"
     echo "  --commits N         Number of commits to scan (default: 50)"
     echo "  --all-history       Scan entire git history (slower)"
@@ -1188,6 +1270,9 @@ show_help() {
     echo "  The --scan-history mode checks existing commits for accidentally"
     echo "  committed secrets. Uses gitleaks or trufflehog if available,"
     echo "  otherwise falls back to native grep-based scanning."
+    echo ""
+    echo "  The --pre-push mode is called by the pre-push git hook to scan"
+    echo "  commits about to be pushed. Uses gitleaks for speed."
     echo ""
     echo "Examples:"
     echo "  $(basename "$0")                    # Full analysis with Gemini API"
@@ -1215,6 +1300,15 @@ main() {
             --pre-commit)
                 PRE_COMMIT_MODE=true
                 USE_LOCAL_ONLY=true
+                shift
+                ;;
+            --pre-push)
+                PRE_PUSH_MODE=true
+                USE_LOCAL_ONLY=true
+                if [ -n "$2" ] && [[ ! "$2" =~ ^- ]]; then
+                    PRE_PUSH_RANGE="$2"
+                    shift
+                fi
                 shift
                 ;;
             --commits)
@@ -1260,9 +1354,20 @@ main() {
         exit 0
     fi
 
+    # Pre-push hook mode (scan commits being pushed)
+    if [ "$PRE_PUSH_MODE" = true ]; then
+        check_git_repo
+        if [ -z "$PRE_PUSH_RANGE" ]; then
+            print_error "--pre-push requires a commit range"
+            exit 1
+        fi
+        run_pre_push_scan "$PRE_PUSH_RANGE"
+        exit $?
+    fi
+
     # History scanning mode
     if [ "$SCAN_HISTORY" = true ]; then
-        print_header "Gemini Git Helper v2.3 (History Scan)"
+        print_header "Gemini Git Helper v2.4 (History Scan)"
         check_git_repo
         scan_commit_history
         exit $?
@@ -1270,9 +1375,9 @@ main() {
 
     # Normal commit helper mode
     if [ "$USE_LOCAL_ONLY" = true ]; then
-        print_header "Gemini Git Helper v2.3 (Local Mode)"
+        print_header "Gemini Git Helper v2.4 (Local Mode)"
     else
-        print_header "Gemini Git Helper v2.3"
+        print_header "Gemini Git Helper v2.4"
     fi
 
     check_git_repo
