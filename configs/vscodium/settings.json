@@ -9,8 +9,11 @@
     // Terminal link settings
     "terminal.integrated.enableFileLinks": "on",
     "terminal.integrated.shellIntegration.enabled": true,
-    "terminal.integrated.linkDetectionStrategy": "path",
-    "terminal.integrated.allowChords": true,
-    "terminal.integrated.customGlyph": true,
+    "terminal.integrated.allowChords": false,
+    "terminal.integrated.customGlyphs": true,
+
+    // Disable GPU acceleration (fixes click detection on Wayland)
+    "terminal.integrated.gpuAcceleration": "off",
+
     "files.autoSave": "onFocusChange"
 }

@@ -1,8 +1,9 @@
 [
-    // Terminal link handling
+    // Keyboard workaround for Wayland Ctrl+Click issue
+    // Use Ctrl+Shift+O to open detected links in terminal
     {
-        "key": "ctrl+click",
-        "command": "editor.action.openLink",
+        "key": "ctrl+shift+o",
+        "command": "workbench.action.terminal.openDetectedLink",
         "when": "terminalFocus"
     }
 ]
