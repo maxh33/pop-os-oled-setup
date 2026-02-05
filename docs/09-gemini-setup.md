@@ -110,8 +110,33 @@ node_modules
 
 #### Configuration
 
-- **API Keys**: Set `GEMINI_API_KEY` environment variable (required, no hardcoded fallbacks)
+- **API Keys**: Store `GEMINI_API_KEY` in `~/.secrets` (chmod 600, sourced by `~/.bashrc`). No hardcoded keys.
 - **Models**: Tries gemini-2.5-flash, gemini-2.5-pro, gemini-2.0-flash, gemini-2.0-flash-lite in order
+
+#### Setting Up ~/.secrets
+
+All API keys live in a single private file, auto-sourced by the shell:
+
+```bash
+# 1. Create the file
+touch ~/.secrets && chmod 600 ~/.secrets
+
+# 2. Add your API key
+echo "export GEMINI_API_KEY='your-gemini-api-key-here'" >> ~/.secrets
+
+# 3. Add to ~/.bashrc (after the ~/.bash_aliases block):
+#   if [ -f ~/.secrets ]; then
+#       . ~/.secrets
+#   fi
+
+# 4. Reload
+source ~/.bashrc
+```
+
+**Important:**
+- Never commit `~/.secrets` to any repository
+- `.gitignore` pattern `*secret*` provides a safety net
+- Use `chmod 600` to restrict to your user only
 
 #### Global Pre-Commit Hook
 

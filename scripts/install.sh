@@ -24,6 +24,14 @@ mkdir -p ~/.config/systemd/user
 mkdir -p ~/.local/bin
 mkdir -p ~/.local/state
 
+# Create ~/.secrets from template if it doesn't exist
+if [ ! -f ~/.secrets ]; then
+    echo "Creating ~/.secrets template..."
+    cp "$REPO_DIR/configs/shell/api-keys.template" ~/.secrets
+    chmod 600 ~/.secrets
+    echo "IMPORTANT: Edit ~/.secrets and add your actual API keys"
+fi
+
 # Copy WirePlumber config
 echo "Installing WirePlumber config..."
 cp "$REPO_DIR/configs/wireplumber/"*.conf ~/.config/wireplumber/wireplumber.conf.d/
@@ -49,6 +57,15 @@ cp "$REPO_DIR/scripts/hdmi-audio-hotplug.sh" ~/.local/bin/
 cp "$REPO_DIR/scripts/display-verify.sh" ~/.local/bin/
 chmod +x ~/.local/bin/hdmi-audio-*.sh
 chmod +x ~/.local/bin/display-verify.sh
+
+# Ensure ~/.bashrc sources ~/.secrets
+if ! grep -q '\.secrets' ~/.bashrc; then
+    echo ""
+    echo "NOTE: Add to your ~/.bashrc (after ~/.bash_aliases block):"
+    echo '  if [ -f ~/.secrets ]; then'
+    echo '      . ~/.secrets'
+    echo '  fi'
+fi
 
 # Install udev rule (requires sudo)
 echo ""

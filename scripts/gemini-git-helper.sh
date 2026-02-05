@@ -25,7 +25,7 @@ SCAN_ALL_HISTORY=false # Scan entire history
 GEMINI_MODELS=("gemini-2.5-flash" "gemini-2.5-pro" "gemini-2.0-flash" "gemini-2.0-flash-lite")
 # API key from environment variable ONLY - no hardcoded fallbacks!
 # Set with: export GEMINI_API_KEY='your-key-here'
-GEMINI_API_KEYS=("${GEMINI_API_KEY:-}")
+# Removed GEMINI_API_KEYS array definition as it's now handled dynamically.
 AUTH_METHOD=""  # Will be set to "api_key" or "oauth"
 ACTIVE_API_KEY=""  # The key that worked
 

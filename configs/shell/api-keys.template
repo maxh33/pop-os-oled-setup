@@ -1,0 +1,7 @@
+# ~/.secrets - Private API keys and credentials
+# Copy to ~/.secrets and fill in your actual keys
+# chmod 600 ~/.secrets
+# Sourced by ~/.bashrc automatically
+
+export GEMINI_API_KEY='your-gemini-api-key-here'
+# export OTHER_API_KEY='your-other-key-here'
