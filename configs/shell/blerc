@@ -1,0 +1,64 @@
+# ~/.blerc - ble.sh configuration
+# Gruvbox dark theme to match Kitty terminal
+
+# Syntax highlighting colors
+ble-face -s syntax_default           fg=#ebdbb2
+ble-face -s syntax_command           fg=#b8bb26,bold
+ble-face -s syntax_quoted            fg=#b8bb26
+ble-face -s syntax_quotation         fg=#b8bb26
+ble-face -s syntax_error             fg=#fb4934,bg=#3c3836
+ble-face -s syntax_varname           fg=#83a598
+ble-face -s syntax_delimiter         fg=#a89984
+ble-face -s syntax_param_expansion   fg=#83a598
+ble-face -s syntax_history_expansion fg=#fe8019
+ble-face -s syntax_function_name     fg=#8ec07c,bold
+ble-face -s syntax_comment           fg=#928374,italic
+ble-face -s syntax_glob              fg=#fe8019
+ble-face -s syntax_brace             fg=#d3869b
+ble-face -s syntax_tilde             fg=#d3869b
+ble-face -s syntax_document          fg=#a89984
+ble-face -s syntax_document_begin    fg=#a89984
+
+# Command type colors
+ble-face -s command_builtin          fg=#fe8019
+ble-face -s command_alias            fg=#8ec07c
+ble-face -s command_function         fg=#8ec07c
+ble-face -s command_file             fg=#b8bb26
+ble-face -s command_keyword          fg=#fb4934
+ble-face -s command_jobs             fg=#fabd2f
+ble-face -s command_directory        fg=#83a598
+
+# Filename colors (for completion/paths)
+ble-face -s filename_directory       fg=#83a598,underline
+ble-face -s filename_executable      fg=#b8bb26,bold
+ble-face -s filename_link            fg=#8ec07c,underline
+ble-face -s filename_orphan          fg=#fb4934,underline
+ble-face -s filename_setuid          fg=#1d2021,bg=#fb4934
+
+# Auto-suggestions (gray ghost text)
+ble-face -s auto_complete            fg=#665c54
+
+# Region/selection colors
+ble-face -s region                   bg=#3c3836
+ble-face -s region_insert            bg=#3c3836
+
+# Disabled command color (for invalid commands)
+ble-face -s disabled                 fg=#665c54
+
+# Overwrite mode indicator
+ble-face -s overwrite_mode           fg=#1d2021,bg=#fabd2f
+
+# Enable auto-suggestions (fish-style)
+bleopt complete_auto_complete=1
+
+# Auto-suggestion delay (ms) - instant feels better
+bleopt complete_auto_delay=0
+
+# Enable menu-style completion
+bleopt complete_menu_style=dense
+
+# Highlight matching brackets
+bleopt highlight_syntax=1
+
+# Enable timeout for syntax highlighting on very long lines
+bleopt syntax_eval_polling_interval=50

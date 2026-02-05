@@ -1,0 +1,22 @@
+# fzf - Fuzzy Finder Integration
+# Add this to ~/.bashrc
+# Enables: Ctrl+R (history), Ctrl+T (files), Alt+C (cd)
+
+if [ -f /usr/share/doc/fzf/examples/key-bindings.bash ]; then
+    source /usr/share/doc/fzf/examples/key-bindings.bash
+fi
+
+# fzf appearance (gruvbox dark theme to match Kitty)
+export FZF_DEFAULT_OPTS='
+  --height 40%
+  --layout=reverse
+  --border
+  --info=inline
+  --color=bg+:#3c3836,bg:#000000,spinner:#fb4934,hl:#928374
+  --color=fg:#ebdbb2,header:#928374,info:#83a598,pointer:#fb4934
+  --color=marker:#fb4934,fg+:#ebdbb2,prompt:#fb4934,hl+:#fb4934
+'
+
+# Increase history size for better fzf experience
+HISTSIZE=50000
+HISTFILESIZE=100000
