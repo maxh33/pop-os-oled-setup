@@ -89,6 +89,21 @@ npm install -g @anthropic-ai/claude-code
 - MCP Servers: `~/.claude/settings.json` (mcpServers section)
 - Global instructions: `~/.claude/CLAUDE.md`
 
+### MCP Servers Configured
+| Server | Purpose |
+|--------|---------|
+| context7 | Library documentation lookup |
+| server-configs-docs | Claude Code config docs |
+| desktop-commander | File/process automation |
+| playwright | Browser automation |
+| linear | Issue tracking |
+| gemini | AI analysis assistant |
+
+See `configs/claude/CLAUDE.md` for comprehensive MCP usage documentation including:
+- Strategy guide for choosing which MCP to use
+- Tool capabilities for each server
+- Usage examples and best practices
+
 ## VSCodium
 
 ### Installation
