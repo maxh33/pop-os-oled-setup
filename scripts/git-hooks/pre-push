@@ -1,0 +1,44 @@
+#!/bin/bash
+# Global pre-push hook - last-line defense against pushing secrets
+# Enabled via: git config --global core.hooksPath /home/max/bin/git-hooks/
+
+# Read push info from stdin (format: <local ref> <local sha> <remote ref> <remote sha>)
+while read local_ref local_sha remote_ref remote_sha; do
+    # Skip branch deletion
+    if [ "$local_sha" = "0000000000000000000000000000000000000000" ]; then
+        continue
+    fi
+
+    # Determine commit range to scan
+    if [ "$remote_sha" = "0000000000000000000000000000000000000000" ]; then
+        # New branch - scan all commits (limited to 50 for performance)
+        range="$local_sha"
+    else
+        # Existing branch - scan new commits only
+        range="${remote_sha}..${local_sha}"
+    fi
+
+    # Run pre-push scan
+    if command -v gemini-git-helper.sh &> /dev/null; then
+        output=$(gemini-git-helper.sh --pre-push "$range" 2>&1)
+        exit_code=$?
+
+        if [ $exit_code -ne 0 ]; then
+            echo ""
+            echo -e "\033[0;31m========================================\033[0m"
+            echo -e "\033[0;31m  PUSH BLOCKED: Secrets in commits!    \033[0m"
+            echo -e "\033[0;31m========================================\033[0m"
+            echo ""
+            echo "$output"
+            echo ""
+            echo "To bypass (NOT recommended): git push --no-verify"
+            exit 1
+        else
+            echo -e "\033[0;32m✓\033[0m Pre-push scan: no secrets detected"
+        fi
+    else
+        echo "Warning: gemini-git-helper.sh not found in PATH"
+    fi
+done
+
+exit 0
