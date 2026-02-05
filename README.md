@@ -42,14 +42,14 @@ paplay /usr/share/sounds/freedesktop/stereo/complete.oga
 | Doc | Description |
 |-----|-------------|
 | [HARDWARE.md](HARDWARE.md) | Full hardware specs and requirements |
-| [01-base-system.md](docs/01-base-system.md) | Pop!_OS installation notes |
 | [02-nvidia-hdmi-audio.md](docs/02-nvidia-hdmi-audio.md) | **THE FIX** - HDMI audio distortion solution |
-| [03-display-4k-120hz.md](docs/03-display-4k-120hz.md) | 4K@120Hz setup |
-| [04-lg-buddy.md](docs/04-lg-buddy.md) | LG TV auto-control integration |
 | [05-development-tools.md](docs/05-development-tools.md) | Dev environment setup |
-| [06-terminal-kitty.md](docs/06-terminal-kitty.md) | Kitty terminal config |
-| [07-cosmic-desktop.md](docs/07-cosmic-desktop.md) | COSMIC shortcuts & settings |
-| [08-troubleshooting.md](docs/08-troubleshooting.md) | Common issues & fixes |
+| [06-kitty-shortcuts.md](docs/06-kitty-shortcuts.md) | Kitty terminal shortcuts |
+| [07-epson-l3150-printer.md](docs/07-epson-l3150-printer.md) | Epson L3150 printer/scanner setup |
+| [08-voxtype-setup.md](docs/08-voxtype-setup.md) | Voxtype speech-to-text setup |
+| [09-gemini-setup.md](docs/09-gemini-setup.md) | Gemini AI CLI setup |
+| [10-fzf-history-search.md](docs/10-fzf-history-search.md) | FZF fuzzy history search |
+| [11-blesh-setup.md](docs/11-blesh-setup.md) | ble.sh syntax highlighting & auto-suggestions |
 
 ## Key Fix Summary
 
