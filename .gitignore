@@ -35,3 +35,6 @@ Thumbs.db
 credentials.json
 *.secret
 ..bfg-report/
+
+# OpenVPN - ignore actual configs with real keys, keep templates
+configs/openvpn/*.ovpn
