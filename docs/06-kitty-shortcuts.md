@@ -89,6 +89,37 @@ The pattern is mostly `Ctrl+Shift+<key>`:
 - **E** = URL hints (very useful)
 - **H** = scrollback in pager
 
+## FZF + ble.sh (Fuzzy Finder)
+
+| Action | Shortcut |
+|--------|----------|
+| **Search command history** | `Ctrl+T` |
+| **Change directory** | `Alt+C` |
+| **Insert file path** | `Ctrl+T` (in middle of command) |
+
+### Inside FZF search
+| Action | Key |
+|--------|-----|
+| Move up/down | `Ctrl+K` / `Ctrl+J` or arrow keys |
+| Select result | `Enter` |
+| Cancel | `Esc` or `Ctrl+C` |
+| Toggle selection | `Tab` (multi-select mode) |
+
+### Useful history tricks
+```bash
+# Search history for a command (type partial match)
+Ctrl+R  then start typing
+
+# Re-run last command
+!!
+
+# Re-run last command starting with "git"
+!git
+
+# Use last argument of previous command
+Alt+.
+```
+
 ## Config Location
 
 `~/.config/kitty/kitty.conf`
