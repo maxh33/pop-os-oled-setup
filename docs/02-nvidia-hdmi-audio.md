@@ -254,6 +254,39 @@ If audio is still distorted after applying this fix:
 - **HDA Codec Node**: 0x05 (HDMI audio pin)
 - **Pin Enable Value**: 0x40
 
+## Bluetooth Audio Switching
+
+The system supports switching between HDMI (ARC) and Bluetooth audio outputs using `audio-switch.sh`.
+
+### Usage
+
+```bash
+audio-switch.sh                    # Toggle HDMI <-> Bluetooth
+audio-switch.sh hdmi               # Switch to HDMI (ARC/Polk soundbar)
+audio-switch.sh bluetooth           # Switch to Bluetooth (most recent device)
+audio-switch.sh bluetooth xm5      # Switch to Sony WH-1000XM5
+audio-switch.sh bluetooth punker   # Switch to Punker speaker
+```
+
+**Keyboard shortcut**: `Super+A` toggles audio output.
+
+### How It Works
+
+- **State file** (`~/.local/state/audio-output-mode`): tracks "hdmi" or "bluetooth"
+- **Watchdog** respects the state — only enforces HDMI when mode is "hdmi"
+- **Stream moving**: `pactl move-sink-input` moves all active streams (WirePlumber's `default.audio.sink` metadata is unreliable with BT devices connected)
+- **Boot default**: HDMI (set by `hdmi-audio-fix.sh` on login)
+
+### Bluetooth Configuration
+
+- **BT autoswitch disabled**: `bluetooth.autoswitch-to-headset-profile = false` — prevents WirePlumber from switching headsets (e.g. Sony WH-1000XM5) from A2DP (high quality) to HSP/HFP (low quality + mic) when recording
+- **Dedicated microphone always used**: Rear Mic on Starship/Matisse HD Audio Controller
+- **Trusted devices**: Set via `bluetoothctl trust <MAC>` for auto-reconnect
+
+### Known Behavior
+
+WirePlumber (1.5.84) stubbornly controls `default.audio.sink` metadata when a Bluetooth device has higher `priority.session` (BT=1010 vs HDMI=632). The `*` indicator in `wpctl status` may show the BT device even when audio is routing through HDMI. This is cosmetic — the actual audio routing is controlled by stream connections, not the default indicator.
+
 ## References
 
 - [Arch Wiki - PipeWire](https://wiki.archlinux.org/title/PipeWire)

@@ -6,6 +6,9 @@ LOG_DIR="$HOME/.local/state"
 mkdir -p "$LOG_DIR" 2>/dev/null
 LOG_FILE="$LOG_DIR/hdmi-audio-fix.log"
 
+# Set initial audio output mode to HDMI on boot
+echo "hdmi" > "$LOG_DIR/audio-output-mode"
+
 log() {
     echo "$(date): $1" >> "$LOG_FILE" 2>/dev/null || true
 }
@@ -31,6 +34,7 @@ sudo /usr/bin/hda-verb /dev/snd/hwC0D0 0x05 0x707 0x40 2>/dev/null
 
 # Step 4: Set HDMI as default output using pw-metadata (most reliable method)
 HDMI_SINK="alsa_output.pci-0000_0a_00.1.hdmi-stereo-extra1"
+pw-metadata -n default 0 default.configured.audio.sink "{\"name\":\"$HDMI_SINK\"}" 2>/dev/null
 pw-metadata -n default 0 default.audio.sink "{\"name\":\"$HDMI_SINK\"}" 2>/dev/null
 log "Set pw-metadata default.audio.sink to HDMI"
 # Also set via pactl for compatibility
