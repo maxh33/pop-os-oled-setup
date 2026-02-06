@@ -112,11 +112,86 @@ See `configs/claude/CLAUDE.md` for comprehensive MCP usage documentation includi
 sudo apt install codium
 ```
 
-### Key Extensions
-- AMOLED theme (for OLED displays)
-- GitLens
-- Prettier
-- ESLint
+### Configuration Files
+```bash
+cp configs/vscodium/settings.json ~/.config/VSCodium/User/settings.json
+cp configs/vscodium/keybindings.json ~/.config/VSCodium/User/keybindings.json
+sudo cp configs/vscodium/codium-flags.conf /usr/share/codium/codium-flags.conf
+```
+
+### Extensions (Open VSX)
+Install from `configs/vscodium/extensions.txt`:
+```bash
+cat configs/vscodium/extensions.txt | grep -v '^#' | grep -v '^$' | xargs -L 1 codium --install-extension
+```
+
+### GitHub Copilot (Manual Install)
+
+Copilot is not on Open VSX due to VSCodium's telemetry removal. Requires manual VSIX install.
+
+**Step 1 — Modify product.json**
+
+Add `trustedExtensionAuthAccess` to `/usr/share/codium/resources/app/product.json`.
+Find the closing `}` of `extensionEnabledApiProposals` and add this line **after** it:
+
+```json
+  },
+  "trustedExtensionAuthAccess": ["github.copilot", "github.copilot-chat"],
+  "extensionKind": {
+```
+
+> **Note:** `extensionEnabledApiProposals` already includes entries for `GitHub.copilot` and
+> `GitHub.copilot-chat` in VSCodium 1.108+. Only `trustedExtensionAuthAccess` needs to be added.
+
+Validate JSON after editing:
+```bash
+python3 -c "import json; json.load(open('/usr/share/codium/resources/app/product.json')); print('OK')"
+```
+
+> **Warning:** VSCodium updates overwrite product.json. Re-add `trustedExtensionAuthAccess` after each update.
+
+**Step 2 — Download and install VSIX files**
+
+The marketplace returns gzip-compressed files, not raw VSIX. Must decompress before installing.
+
+```bash
+# Download (replace VERSION with desired version)
+curl -L "https://marketplace.visualstudio.com/_apis/public/gallery/publishers/GitHub/vsextensions/copilot/1.388.0/vspackage" -o /tmp/copilot.vsix.gz
+curl -L "https://marketplace.visualstudio.com/_apis/public/gallery/publishers/GitHub/vsextensions/copilot-chat/0.35.2/vspackage" -o /tmp/copilot-chat.vsix.gz
+
+# Decompress (marketplace returns gzip, not raw vsix)
+gunzip /tmp/copilot.vsix.gz
+gunzip /tmp/copilot-chat.vsix.gz
+
+# Install
+codium --install-extension /tmp/copilot.vsix
+codium --install-extension /tmp/copilot-chat.vsix
+```
+
+**Tested working versions (VSCodium 1.108):**
+| Extension | Version |
+|-----------|---------|
+| GitHub Copilot | 1.388.0 |
+| GitHub Copilot Chat | 0.35.2 |
+
+**Step 3 — Sign in to GitHub**
+
+1. Open VSCodium
+2. Click Copilot icon in status bar → "Sign in to GitHub"
+3. Complete OAuth flow in browser
+4. If sign-in button is non-functional, install Chat v0.23 first for auth, then upgrade:
+   ```bash
+   # Auth workaround for newer versions
+   curl -L "https://marketplace.visualstudio.com/_apis/public/gallery/publishers/GitHub/vsextensions/copilot-chat/0.23.2024121102/vspackage" -o /tmp/chat-old.vsix.gz
+   gunzip /tmp/chat-old.vsix.gz
+   codium --install-extension /tmp/chat-old.vsix   # Sign in with this version
+   codium --install-extension /tmp/copilot-chat.vsix  # Then upgrade — auth persists
+   ```
+
+**Features available:**
+- Inline code completions (autocomplete)
+- Chat panel (right sidebar — "Agent" mode with model selector)
+- Copilot CLI in terminal (`copilot` command — separate npm package)
 
 ## Useful CLI Tools
 

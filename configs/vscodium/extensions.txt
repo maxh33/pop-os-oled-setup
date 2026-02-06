@@ -1,6 +1,18 @@
 # VSCodium Extensions
-# Install all: cat extensions.txt | grep -v '^#' | xargs -L 1 codium --install-extension
+# Install all (Open VSX): cat extensions.txt | grep -v '^#' | grep -v '^$' | xargs -L 1 codium --install-extension
 
+# --- Manual VSIX Install (not on Open VSX) ---
+# GitHub Copilot requires manual .vsix download from VS Code Marketplace:
+#   1. Download: curl -L "https://marketplace.visualstudio.com/_apis/public/gallery/publishers/GitHub/vsextensions/copilot/<VERSION>/vspackage" -o copilot.vsix.gz
+#   2. Decompress: gunzip copilot.vsix.gz  (marketplace returns gzip, not raw vsix)
+#   3. Install: codium --install-extension copilot.vsix
+#   4. Repeat for copilot-chat
+#   5. Requires product.json modification — see docs/05-development-tools.md
+# Tested versions (VSCodium 1.108): Copilot 1.388.0 + Copilot Chat 0.35.2
+# github.copilot        (manual vsix)
+# github.copilot-chat   (manual vsix)
+
+# --- Open VSX Extensions (auto-install) ---
 anthropic.claude-code
 esbenp.prettier-vscode
 google.gemini-cli-vscode-ide-companion
