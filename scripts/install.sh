@@ -54,8 +54,10 @@ echo "Installing scripts..."
 cp "$REPO_DIR/scripts/hdmi-audio-fix.sh" ~/.local/bin/
 cp "$REPO_DIR/scripts/hdmi-audio-watchdog.sh" ~/.local/bin/
 cp "$REPO_DIR/scripts/hdmi-audio-hotplug.sh" ~/.local/bin/
+cp "$REPO_DIR/scripts/audio-switch.sh" ~/.local/bin/
 cp "$REPO_DIR/scripts/display-verify.sh" ~/.local/bin/
 chmod +x ~/.local/bin/hdmi-audio-*.sh
+chmod +x ~/.local/bin/audio-switch.sh
 chmod +x ~/.local/bin/display-verify.sh
 
 # Ensure ~/.bashrc sources ~/.secrets
@@ -100,12 +102,18 @@ sleep 2
 echo "Running HDMI audio fix..."
 ~/.local/bin/hdmi-audio-fix.sh > /dev/null 2>&1 || true
 
+# Disable Bluetooth auto-switch to headset profile (keeps dedicated mic)
+echo "Configuring Bluetooth audio settings..."
+wpctl settings bluetooth.autoswitch-to-headset-profile false 2>/dev/null
+wpctl settings -s bluetooth.autoswitch-to-headset-profile 2>/dev/null
+
 echo ""
 echo "=== Installation Complete ==="
 echo ""
 echo "Next steps:"
 echo "1. Test audio: paplay /usr/share/sounds/freedesktop/stereo/complete.oga"
 echo "2. If no sound, toggle HDMI Deep Color in TV settings"
-echo "3. Check docs/02-nvidia-hdmi-audio.md for troubleshooting"
+echo "3. Switch audio: audio-switch.sh [hdmi|bluetooth|bluetooth <name>]"
+echo "4. Check docs/02-nvidia-hdmi-audio.md for troubleshooting"
 echo ""
 echo "Enjoy your distortion-free HDMI audio!"

@@ -1,10 +1,12 @@
 [Unit]
 Description=VoxType Voice Dictation Daemon
 After=graphical-session.target pipewire.service
-Wants=pipewire.service
+Wants=pipewire.service graphical-session.target
 
 [Service]
 Type=simple
+Environment=WAYLAND_DISPLAY=wayland-1
+ExecStartPre=/bin/bash -c 'mkdir -p /run/user/1000/voxtype && rm -f /run/user/1000/voxtype/voxtype.lock /run/user/1000/voxtype/pid'
 ExecStart=/usr/local/bin/voxtype daemon
 Restart=on-failure
 RestartSec=5

@@ -78,7 +78,7 @@ model = "large-v3-turbo"
 # The array form helps with multilingual users where Whisper might misdetect
 # the language, especially for short sentences.
 # See: https://github.com/openai/whisper#available-models-and-languages
-language = "en"
+language = ["en", "pt"]
 
 # Translate non-English speech to English
 translate = false
@@ -89,7 +89,7 @@ translate = false
 # Initial prompt to provide context for transcription
 # Use this to hint at terminology, proper nouns, or formatting conventions.
 # Example: "Technical discussion about Rust, TypeScript, and Kubernetes."
-initial_prompt = "Technical discussion about programming, Linux, Python, TypeScript, and software development."
+initial_prompt = "Technical discussion about programming, Linux, Python, TypeScript, and software development. Discussão técnica sobre programação e desenvolvimento de software."
 
 # --- Multi-model settings ---
 #

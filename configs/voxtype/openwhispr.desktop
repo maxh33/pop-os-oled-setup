@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=OpenWhispr
+Comment=Voice-to-text dictation
+Exec=env ELECTRON_OZONE_PLATFORM_HINT=x11 open-whispr --ozone-platform=x11
+Icon=openwhispr
+Terminal=false
+Categories=Utility;AudioVideo;
+StartupNotify=false
+Hidden=true
+X-GNOME-Autostart-enabled=false
