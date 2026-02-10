@@ -89,36 +89,103 @@ The pattern is mostly `Ctrl+Shift+<key>`:
 - **E** = URL hints (very useful)
 - **H** = scrollback in pager
 
-## FZF + ble.sh (Fuzzy Finder)
+---
+
+## ble.sh (Bash Line Editor)
+
+Enhanced line editing for Bash — syntax highlighting, autosuggestions, and vim-like modes.
+
+### Editing
 
 | Action | Shortcut |
 |--------|----------|
-| **Search command history** | `Ctrl+T` |
-| **Change directory** | `Alt+C` |
-| **Insert file path** | `Ctrl+T` (in middle of command) |
+| Accept autosuggestion | `Right Arrow` or `End` |
+| Accept first word of suggestion | `Alt+F` |
+| Complete (tab menu) | `Tab` |
+| Cycle completions forward | `Tab` (repeatedly) |
+| Cycle completions backward | `Shift+Tab` |
+| Clear screen | `Ctrl+L` |
+| Undo | `Ctrl+/` or `Ctrl+Z` |
+| Redo | `Ctrl+Shift+/` |
 
-### Inside FZF search
-| Action | Key |
-|--------|-----|
+### Navigation
+
+| Action | Shortcut |
+|--------|----------|
+| Move word left | `Alt+B` or `Ctrl+Left` |
+| Move word right | `Alt+F` or `Ctrl+Right` |
+| Beginning of line | `Home` or `Ctrl+A` |
+| End of line | `End` or `Ctrl+E` |
+
+### History
+
+| Action | Shortcut |
+|--------|----------|
+| Previous command | `Up Arrow` |
+| Next command | `Down Arrow` |
+| Search history backward | `Ctrl+R` |
+| Search history forward | `Ctrl+S` |
+
+### Deletion
+
+| Action | Shortcut |
+|--------|----------|
+| Delete word backward | `Ctrl+W` or `Alt+Backspace` |
+| Delete word forward | `Alt+D` |
+| Delete to end of line | `Ctrl+K` |
+| Delete to start of line | `Ctrl+U` |
+
+---
+
+## fzf (Fuzzy Finder)
+
+Interactive fuzzy search for files, history, and more.
+
+### Shell Keybindings
+
+| Action | Shortcut |
+|--------|----------|
+| **Search command history** | `Ctrl+R` (overrides default) |
+| **Find files** | `Ctrl+T` (inserts path at cursor) |
+| **Change directory** | `Alt+C` (cd into selected dir) |
+
+### Inside fzf (when the finder is open)
+
+| Action | Shortcut |
+|--------|----------|
 | Move up/down | `Ctrl+K` / `Ctrl+J` or arrow keys |
-| Select result | `Enter` |
+| Select item | `Enter` |
 | Cancel | `Esc` or `Ctrl+C` |
-| Toggle selection | `Tab` (multi-select mode) |
+| Toggle selection (multi) | `Tab` |
+| Select all | `Ctrl+A` |
+| Scroll preview up/down | `Shift+Up` / `Shift+Down` |
 
-### Useful history tricks
+### Inline Usage
+
 ```bash
-# Search history for a command (type partial match)
-Ctrl+R  then start typing
+# Fuzzy-find a file and open it
+vim $(fzf)
 
-# Re-run last command
-!!
+# Pipe anything into fzf
+git log --oneline | fzf
 
-# Re-run last command starting with "git"
-!git
+# Preview files while searching
+fzf --preview 'cat {}'
 
-# Use last argument of previous command
-Alt+.
+# Kill a process interactively
+kill -9 $(ps aux | fzf | awk '{print $2}')
 ```
+
+### Tab Completion (with fzf-tab or **-triggers)
+
+```bash
+cd **<Tab>       # Fuzzy directory picker
+vim **<Tab>      # Fuzzy file picker
+ssh **<Tab>      # Fuzzy host picker
+export **<Tab>   # Fuzzy env variable picker
+```
+
+---
 
 ## Config Location
 
@@ -129,3 +196,5 @@ Alt+.
 - [Official Documentation](https://sw.kovidgoyal.net/kitty/)
 - [Keyboard Shortcuts Reference](https://sw.kovidgoyal.net/kitty/conf/#keyboard-shortcuts)
 - [Kittens (Extensions)](https://sw.kovidgoyal.net/kitty/kittens_intro/)
+- [ble.sh GitHub](https://github.com/akinomyoga/ble.sh)
+- [fzf GitHub](https://github.com/junegunn/fzf)
