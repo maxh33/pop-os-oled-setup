@@ -10,6 +10,12 @@
 set -e
 set -o pipefail
 
+# Require Bash 4+ for associative arrays
+if [ "${BASH_VERSINFO[0]}" -lt 4 ]; then
+    echo "Error: gemini-git-helper.sh requires Bash 4.0+" >&2
+    exit 1
+fi
+
 # --- Configuration ---
 OAUTH_CREDS_FILE="/home/max/.gemini/oauth_creds.json"
 GEMINI_API_BASE="https://generativelanguage.googleapis.com/v1beta/models"
@@ -18,14 +24,17 @@ SCAN_HISTORY=false    # Set to true with --scan-history flag
 PRE_COMMIT_MODE=false # Set to true with --pre-commit flag (secrets-only scan)
 PRE_PUSH_MODE=false   # Set to true with --pre-push flag (scan commits being pushed)
 PRE_PUSH_RANGE=""     # Commit range for pre-push scan
+QUIET=false           # Set to true with --quiet flag
 HISTORY_COMMITS=50    # Default number of commits to scan
 HISTORY_SINCE=""      # Scan since this ref (branch/tag/commit)
 SCAN_ALL_HISTORY=false # Scan entire history
+# Max diff size to send to API (chars). Larger diffs are truncated.
+MAX_DIFF_SIZE=100000
 # Models to try in order (fallback if quota exceeded)
 GEMINI_MODELS=("gemini-2.5-flash" "gemini-2.5-pro" "gemini-2.0-flash" "gemini-2.0-flash-lite")
 # API key from environment variable ONLY - no hardcoded fallbacks!
 # Set with: export GEMINI_API_KEY='your-key-here'
-# Removed GEMINI_API_KEYS array definition as it's now handled dynamically.
+GEMINI_API_KEYS=("${GEMINI_API_KEY:-}")
 AUTH_METHOD=""  # Will be set to "api_key" or "oauth"
 ACTIVE_API_KEY=""  # The key that worked
 
@@ -190,6 +199,7 @@ REQUIRED_DOCKERIGNORE_PATTERNS=(
 # --- Functions ---
 
 print_header() {
+    [[ "$QUIET" == true ]] && return
     echo -e "\n${BLUE}═══════════════════════════════════════════════════════════${NC}"
     echo -e "${BLUE}  $1${NC}"
     echo -e "${BLUE}═══════════════════════════════════════════════════════════${NC}\n"
@@ -204,10 +214,12 @@ print_error() {
 }
 
 print_success() {
+    [[ "$QUIET" == true ]] && return
     echo -e "${GREEN}✓${NC} $1"
 }
 
 print_info() {
+    [[ "$QUIET" == true ]] && return
     echo -e "${BLUE}ℹ${NC} $1"
 }
 
@@ -507,6 +519,10 @@ check_git_repo() {
 # Check API keys are available
 check_api_keys() {
     # API key MUST be set via environment variable - no hardcoded fallbacks!
+    # Try sourcing ~/.secrets if key not in environment (non-interactive shells)
+    if [ -z "${GEMINI_API_KEY:-}" ] && [ -f "$HOME/.secrets" ]; then
+        . "$HOME/.secrets"
+    fi
     if [ -z "${GEMINI_API_KEY:-}" ]; then
         print_error "GEMINI_API_KEY environment variable not set!"
         echo ""
@@ -551,18 +567,28 @@ collect_git_changes() {
         changes+="=== UNTRACKED FILES (new files) ===\n"
         changes+="$UNTRACKED_FILES\n\n"
 
-        # Show content preview of small untracked files
+        # Show content preview of small untracked files (capped to reduce API token waste)
         changes+="=== UNTRACKED FILES CONTENT PREVIEW ===\n"
+        local preview_count=0
+        local max_previews=10
+        local max_preview_lines=50
+        local total_untracked=$(echo "$UNTRACKED_FILES" | wc -l)
         while IFS= read -r file; do
             if [ -f "$file" ]; then
+                if [ "$preview_count" -ge "$max_previews" ]; then
+                    local remaining=$(( total_untracked - preview_count ))
+                    changes+="[... $remaining more untracked files not previewed ...]\n\n"
+                    break
+                fi
                 FILE_SIZE=$(stat -c%s "$file" 2>/dev/null || stat -f%z "$file" 2>/dev/null || echo "0")
                 if [ "$FILE_SIZE" -lt 10000 ]; then
                     changes+="--- $file ---\n"
-                    changes+="$(cat "$file" 2>/dev/null | head -100)\n"
+                    changes+="$(cat "$file" 2>/dev/null | head -$max_preview_lines)\n"
                     changes+="[... truncated if longer ...]\n\n"
                 else
                     changes+="--- $file --- (file too large, $FILE_SIZE bytes)\n\n"
                 fi
+                ((preview_count++)) || true
             fi
         done <<< "$UNTRACKED_FILES"
         print_info "Found $(echo "$UNTRACKED_FILES" | wc -l) untracked files"
@@ -612,7 +638,7 @@ scan_sensitive_content() {
         return 0
     fi
 
-    echo "Scanning $(echo "$files_to_scan" | wc -l) files for sensitive content..."
+    [[ "$QUIET" != true ]] && echo "Scanning $(echo "$files_to_scan" | wc -l) files for sensitive content..."
 
     while IFS= read -r file; do
         [ -z "$file" ] && continue
@@ -669,201 +695,215 @@ scan_sensitive_content() {
     fi
 }
 
-# Local commit message generation (fallback when API unavailable)
+# --- Local mode helper functions ---
+
+# Classify a file path into a logical group name
+classify_file_group() {
+    local file="$1"
+    local dir=$(dirname "$file")
+    local base=$(basename "$file")
+    local ext="${base##*.}"
+
+    # Special root-level meta files -> chore
+    case "$base" in
+        .gitignore|.dockerignore|.editorconfig|.prettierrc*|.eslintrc*|\
+        CLAUDE.md|Makefile|Dockerfile*|docker-compose*|package.json|\
+        package-lock.json|yarn.lock|pnpm-lock.yaml|Cargo.lock|\
+        go.mod|go.sum|requirements.txt|Pipfile*|poetry.lock)
+            echo "chore"; return ;;
+    esac
+
+    # .env files -> chore
+    [[ "$base" == .env* ]] && { echo "chore"; return; }
+
+    # .claude directory -> chore
+    [[ "$dir" == .claude || "$dir" == .claude/* ]] && { echo "chore"; return; }
+
+    # By directory prefix
+    case "$dir" in
+        docs|docs/*) echo "docs"; return ;;
+        test|tests|test/*|tests/*|__tests__|__tests__/*|spec|spec/*) echo "test"; return ;;
+        configs|configs/*|config|config/*) echo "config"; return ;;
+        scripts|scripts/*) echo "scripts"; return ;;
+    esac
+
+    # By extension
+    case "$ext" in
+        md|txt|rst) echo "docs"; return ;;
+        yml|yaml|conf|ini|toml) echo "config"; return ;;
+        sh) echo "scripts"; return ;;
+    esac
+
+    # By top-level directory
+    local top_dir="${dir%%/*}"
+    [[ "$top_dir" == "." ]] && top_dir="root"
+    echo "$top_dir"
+}
+
+# Detect conventional commit type for a group
+detect_commit_type_for_group() {
+    local group="$1"
+    shift
+    local files=("$@")
+
+    # Group name directly maps to some types
+    case "$group" in
+        docs) echo "docs"; return ;;
+        test) echo "test"; return ;;
+        config|chore|scripts) echo "chore"; return ;;
+    esac
+
+    # Default: "feat" for new files, "chore" for modifications
+    echo "feat"
+}
+
+# Derive scope string from group name
+derive_scope() {
+    local group="$1"
+    # "chore" group is project-level meta files — use "project" as scope
+    [[ "$group" == "chore" ]] && { echo "project"; return; }
+    # "root" group — use "root" as scope
+    [[ "$group" == "root" ]] && { echo "root"; return; }
+    # Clean up path separators for scope
+    echo "$group" | tr '/' '-'
+}
+
+# Generate a human-readable description for a group of files
+generate_group_description() {
+    local group="$1"
+    shift
+    local files=("$@")
+    local count=${#files[@]}
+
+    if [ "$count" -eq 1 ]; then
+        local base=$(basename "${files[0]}")
+        echo "add/update $base"
+        return
+    fi
+
+    case "$group" in
+        docs) echo "add/update documentation ($count files)" ;;
+        test) echo "add/update tests ($count files)" ;;
+        config) echo "update configuration ($count files)" ;;
+        chore) echo "update project metadata ($count files)" ;;
+        scripts) echo "update scripts ($count files)" ;;
+        *) echo "update $group ($count files)" ;;
+    esac
+}
+
+# Local commit message generation with directory-based grouping
 generate_local_commit_suggestion() {
     print_header "Local Commit Analysis (No API)"
 
-    # Get change status
-    local staged_status=$(git diff --cached --name-status 2>/dev/null || true)
-    local unstaged_status=$(git diff --name-status 2>/dev/null || true)
-    local untracked=$(git ls-files --others --exclude-standard 2>/dev/null || true)
+    # --- Collect ALL changes ---
+    local -a all_entries=()
 
-    if [ -z "$staged_status" ] && [ -z "$unstaged_status" ] && [ -z "$untracked" ]; then
+    # Staged files
+    while IFS=$'\t' read -r status file; do
+        [[ -z "$file" ]] && continue
+        all_entries+=("$status"$'\t'"$file")
+    done < <(git diff --cached --name-status 2>/dev/null)
+
+    # Unstaged files (skip if already in staged)
+    local staged_files_list=""
+    for entry in "${all_entries[@]}"; do
+        staged_files_list+="${entry#*$'\t'}"$'\n'
+    done
+    while IFS=$'\t' read -r status file; do
+        [[ -z "$file" ]] && continue
+        # Skip if already captured as staged
+        if echo "$staged_files_list" | grep -qFx "$file"; then
+            continue
+        fi
+        all_entries+=("$status"$'\t'"$file")
+    done < <(git diff --name-status 2>/dev/null)
+
+    # Untracked files
+    while IFS= read -r file; do
+        [[ -z "$file" ]] && continue
+        all_entries+=("?"$'\t'"$file")
+    done < <(git ls-files --others --exclude-standard 2>/dev/null)
+
+    if [ ${#all_entries[@]} -eq 0 ]; then
         print_info "No changes to analyze"
         return
     fi
 
-    # Count changes (handle empty input properly)
-    local added=0
-    local modified=0
-    local deleted=0
+    # --- Group files by directory/type ---
+    declare -A groups        # group_name -> newline-separated file list
+    declare -A group_order   # group_name -> first-seen index (for stable ordering)
+    local idx=0
 
-    if [ -n "$staged_status" ]; then
-        added=$(echo "$staged_status" | grep -c "^A" || true)
-        modified=$(echo "$staged_status" | grep -c "^M" || true)
-        deleted=$(echo "$staged_status" | grep -c "^D" || true)
-    fi
+    for entry in "${all_entries[@]}"; do
+        local file="${entry#*$'\t'}"
+        local group
+        group=$(classify_file_group "$file")
+        [[ -z "$group" ]] && group="other"
 
-    # Ensure they are integers
-    added=${added:-0}
-    modified=${modified:-0}
-    deleted=${deleted:-0}
-
-    # Get diff content for analysis
-    local diff_content=$(git diff --cached 2>/dev/null || true)
-    [ -z "$diff_content" ] && diff_content=$(git diff 2>/dev/null || true)
-
-    # Detect commit type
-    local commit_type="feat"
-
-    # Check for documentation
-    if echo "$staged_status$unstaged_status$untracked" | grep -qE '\.(md|txt|rst|doc)$'; then
-        commit_type="docs"
-    fi
-
-    # Check for tests
-    if echo "$staged_status$unstaged_status$untracked" | grep -qiE '(test|spec|__tests__)'; then
-        commit_type="test"
-    fi
-
-    # Check for fix indicators
-    if echo "$diff_content" | grep -qiE '\b(fix|bug|error|issue|patch|hotfix|correct)\b'; then
-        commit_type="fix"
-    fi
-
-    # Check for refactoring
-    if echo "$diff_content" | grep -qiE '\b(refactor|restructure|reorganize|cleanup)\b'; then
-        commit_type="refactor"
-    fi
-
-    # Check for config/chore
-    if echo "$staged_status$unstaged_status$untracked" | grep -qE '(\.config\.|package\.json|\.yml|\.yaml|Makefile|Dockerfile)'; then
-        commit_type="chore"
-    fi
-
-    # Determine scope from directories
-    local all_files=$(echo -e "$staged_status\n$unstaged_status" | awk '{print $2}' | grep -v '^$' || true)
-    [ -z "$all_files" ] && all_files="$untracked"
-
-    local dirs=$(echo "$all_files" | xargs -I{} dirname {} 2>/dev/null | sort -u | head -3)
-    local dir_count=$(echo "$dirs" | grep -c . 2>/dev/null || echo 0)
-
-    local scope=""
-    if [ "$dir_count" -eq 1 ]; then
-        scope=$(echo "$dirs" | head -1)
-        [ "$scope" = "." ] && scope=""
-    fi
-
-    # Generate description based on file analysis
-    local desc=""
-    local staged_files=$(echo "$staged_status" | awk '{print $2}' | grep -v '^$' || true)
-
-    # Analyze what types of files changed
-    local has_config=false
-    local has_docker=false
-    local has_env=false
-    local has_docs=false
-    local has_scripts=false
-
-    if echo "$staged_files" | grep -qE '(\.yml|\.yaml|\.json|\.conf|\.ini|\.config)$'; then
-        has_config=true
-    fi
-    if echo "$staged_files" | grep -qiE '(docker|compose)'; then
-        has_docker=true
-    fi
-    if echo "$staged_files" | grep -qE '(\.env|env\.template)'; then
-        has_env=true
-    fi
-    if echo "$staged_files" | grep -qE '(\.md|docs/)'; then
-        has_docs=true
-    fi
-    if echo "$staged_files" | grep -qE '(\.sh|scripts/)'; then
-        has_scripts=true
-    fi
-
-    # Build descriptive message based on what changed
-    if [ "$added" -gt 0 ] && [ "$modified" -eq 0 ]; then
-        if [ "$added" -eq 1 ]; then
-            local file=$(echo "$staged_status" | grep "^A" | head -1 | awk '{print $2}')
-            desc="add $(basename "$file")"
-        else
-            desc="add $added new files"
+        if [[ -z "${group_order[$group]+x}" ]]; then
+            group_order["$group"]=$idx
+            ((idx++)) || true
         fi
-    elif [ "$modified" -gt 0 ] && [ "$added" -eq 0 ]; then
-        if [ "$modified" -eq 1 ]; then
-            local file=$(echo "$staged_status" | grep "^M" | head -1 | awk '{print $2}')
-            desc="update $(basename "$file")"
-        elif [ "$has_docker" = true ] && [ "$has_env" = true ]; then
-            desc="update Docker and environment configuration"
-        elif [ "$has_docker" = true ]; then
-            desc="update Docker configuration"
-        elif [ "$has_config" = true ]; then
-            desc="update configuration files"
-        elif [ "$has_env" = true ]; then
-            desc="update environment template"
-        elif [ "$has_docs" = true ]; then
-            desc="update documentation"
-        elif [ "$has_scripts" = true ]; then
-            desc="update scripts"
-        else
-            desc="update $modified files"
-        fi
-    elif [ "$deleted" -gt 0 ] && [ "$added" -eq 0 ] && [ "$modified" -eq 0 ]; then
-        desc="remove $deleted files"
-    else
-        # Mixed changes
-        local parts=()
-        [ "$added" -gt 0 ] && parts+=("add $added")
-        [ "$modified" -gt 0 ] && parts+=("update $modified")
-        [ "$deleted" -gt 0 ] && parts+=("remove $deleted")
+        groups["$group"]+="$file"$'\n'
+    done
 
-        if [ "$has_docker" = true ]; then
-            desc="update Docker setup"
-        elif [ "$has_config" = true ]; then
-            desc="update configuration"
-        else
-            desc="${parts[*]} files"
-        fi
-    fi
+    # --- Sort groups by first-seen order ---
+    local -a sorted_groups
+    sorted_groups=($(for g in "${!group_order[@]}"; do echo "${group_order[$g]} $g"; done | sort -n | awk '{print $2}'))
 
-    # Build commit message
-    local commit_msg=""
-    if [ -n "$scope" ]; then
-        commit_msg="${commit_type}(${scope}): ${desc}"
-    else
-        commit_msg="${commit_type}: ${desc}"
-    fi
+    # --- Output grouped suggestions ---
+    local has_staged
+    has_staged=$(git diff --cached --name-only 2>/dev/null | head -1)
 
     echo ""
-    echo -e "${GREEN}## Local Commit Suggestion${NC}"
-    echo ""
-    echo "Based on local analysis of your changes:"
+    echo -e "${GREEN}## Local Commit Suggestions (${#sorted_groups[@]} groups)${NC}"
     echo ""
 
-    if [ -n "$staged_status" ]; then
-        echo -e "${BLUE}Staged changes:${NC}"
-        echo "$staged_status" | while read -r line; do
-            local status=$(echo "$line" | cut -c1)
-            local file=$(echo "$line" | awk '{print $2}')
-            case $status in
-                A) echo "  + $file (added)" ;;
-                M) echo "  ~ $file (modified)" ;;
-                D) echo "  - $file (deleted)" ;;
-                R) echo "  > $file (renamed)" ;;
-                *) echo "  * $file" ;;
-            esac
+    if [ -z "$has_staged" ]; then
+        [[ "$QUIET" != true ]] && echo "No files staged yet. Suggested staging and commits by topic:"
+        [[ "$QUIET" != true ]] && echo ""
+    fi
+
+    local group_num=0
+    for group in "${sorted_groups[@]}"; do
+        ((group_num++)) || true
+
+        # Parse file list from newline-separated string
+        local -a group_files=()
+        while IFS= read -r f; do
+            [[ -n "$f" ]] && group_files+=("$f")
+        done <<< "${groups[$group]}"
+
+        local count=${#group_files[@]}
+        local commit_type
+        commit_type=$(detect_commit_type_for_group "$group" "${group_files[@]}")
+        local scope
+        scope=$(derive_scope "$group")
+        local desc
+        desc=$(generate_group_description "$group" "${group_files[@]}")
+
+        # Build git add with proper quoting for files with spaces
+        local add_args=""
+        for f in "${group_files[@]}"; do
+            if [[ "$f" == *" "* ]]; then
+                add_args+="\"$f\" "
+            else
+                add_args+="$f "
+            fi
         done
-        echo ""
-        echo -e "${GREEN}Suggested commit:${NC}"
-        echo -e "  git commit -m \"$commit_msg\""
-    else
-        echo -e "${YELLOW}No staged changes.${NC} Stage files first:"
-        if [ -n "$unstaged_status" ]; then
-            echo "  git add <files>  # for modified files"
-        fi
-        if [ -n "$untracked" ]; then
-            echo "  git add <files>  # for new files"
-        fi
-        echo ""
-        echo -e "${GREEN}Then commit with:${NC}"
-        echo -e "  git commit -m \"$commit_msg\""
-    fi
 
-    echo ""
-    echo -e "${YELLOW}Note:${NC} This is a basic suggestion. For better analysis, ensure API keys are configured."
-    echo "      Change summary: +$added added, ~$modified modified, -$deleted deleted"
+        echo "### Group $group_num: $group ($count files)"
+        echo '```bash'
+        echo "git add $add_args"
+        echo "git commit -m \"${commit_type}(${scope}): ${desc}\""
+        echo '```'
+        echo ""
+    done
 
-    LOCAL_SUGGESTION="$commit_msg"
+    local total=${#all_entries[@]}
+    [[ "$QUIET" != true ]] && echo "Total: $total changed files in ${#sorted_groups[@]} groups"
+
+    LOCAL_SUGGESTION="(${#sorted_groups[@]} grouped suggestions)"
 }
 
 # Check .gitignore patterns
@@ -944,6 +984,26 @@ json_escape() {
     python3 -c "import json,sys; print(json.dumps(sys.stdin.read()))" <<< "$string" | sed 's/^"//;s/"$//'
 }
 
+# Truncate diff if too large for the API
+truncate_diff_if_needed() {
+    local changes="$1"
+    local max_size="$MAX_DIFF_SIZE"
+    local current_size=${#changes}
+
+    if [ "$current_size" -le "$max_size" ]; then
+        echo "$changes"
+        return
+    fi
+
+    local truncated="${changes:0:$max_size}"
+    local omitted_lines=$(( $(echo "${changes:$max_size}" | wc -l) ))
+    truncated+=$'\n\n[... DIFF TRUNCATED — '"$omitted_lines"' more lines omitted (total was '"$current_size"' chars, limit '"$max_size"') ...]'
+    truncated+=$'\nNote: Focus analysis on the changes shown above. Summarize any patterns you see.'
+
+    print_warning "Diff truncated from ${current_size} to ${max_size} chars ($omitted_lines lines omitted)"
+    echo "$truncated"
+}
+
 # Call Gemini API
 call_gemini_api() {
     print_header "Calling Gemini API"
@@ -963,6 +1023,10 @@ call_gemini_api() {
     if [ -n "$DOCKERIGNORE_MISSING_PATTERNS" ]; then
         security_context+="WARNING: .dockerignore is missing these patterns: $DOCKERIGNORE_MISSING_PATTERNS\n\n"
     fi
+
+    # Truncate diff if too large for the API
+    local changes_for_api
+    changes_for_api=$(truncate_diff_if_needed "$ALL_CHANGES")
 
     # Construct the prompt
     local prompt_content="You are an expert software engineer analyzing git changes to suggest precise, meaningful commit messages.
@@ -1005,7 +1069,7 @@ EXAMPLES OF GOOD VS BAD COMMIT MESSAGES:
 ✓ GOOD: \"refactor(setup): support multiple installation paths\"
 
 GIT CHANGES TO ANALYZE:
-$ALL_CHANGES
+$changes_for_api
 
 OUTPUT FORMAT (no extra text, just this structure):
 
@@ -1033,9 +1097,12 @@ git commit -m \"type(scope): specific description\"
     local escaped_prompt
     escaped_prompt=$(json_escape "$prompt_content")
 
-    # Build the request body
-    local request_body
-    request_body=$(cat <<EOF
+    # Build the request body and write to temp file (avoids ARG_MAX limit for curl)
+    local request_file
+    request_file=$(mktemp /tmp/gemini-request-XXXXXX.json)
+    trap "rm -f '$request_file'" EXIT
+
+    cat > "$request_file" <<EOF
 {
   "contents": [
     {
@@ -1055,20 +1122,23 @@ git commit -m \"type(scope): specific description\"
   ]
 }
 EOF
-)
+
+    local request_size=$(stat -c%s "$request_file" 2>/dev/null || stat -f%z "$request_file" 2>/dev/null || echo "0")
+    print_info "Request body size: $(( request_size / 1024 ))KB"
 
     # Try each API key and model combination until one works
     local success=false
 
     # Build list of API keys to try (always use API keys, OAuth is unreliable for Gemini)
+    # This must be done here, AFTER GEMINI_API_KEY might have been sourced by check_api_keys
     local keys_to_try=()
-    for key in "${GEMINI_API_KEYS[@]}"; do
-        [ -n "$key" ] && keys_to_try+=("$key")
-    done
+    if [ -n "$GEMINI_API_KEY" ]; then
+        keys_to_try+=("$GEMINI_API_KEY")
+    fi
 
     if [ ${#keys_to_try[@]} -eq 0 ]; then
         print_error "No API keys available"
-        echo "Set GEMINI_API_KEY environment variable or add keys to the script"
+        echo "Set GEMINI_API_KEY environment variable or ensure it's sourced correctly."
         exit 1
     fi
 
@@ -1083,10 +1153,10 @@ EOF
 
             local api_url="${GEMINI_API_BASE}/${model}:generateContent"
 
-            # Always use API key authentication for Gemini API
+            # Read request body from file (avoids "Argument list too long" error)
             API_RESPONSE=$(curl -s -X POST \
                 -H "Content-Type: application/json" \
-                -d "$request_body" \
+                -d "@${request_file}" \
                 "${api_url}?key=${api_key}")
 
             if [ $? -ne 0 ]; then
@@ -1157,15 +1227,17 @@ display_results() {
 
     echo "$SUGGESTIONS"
 
-    echo ""
-    print_header "Next Steps"
-    echo "1. Review the suggestions above carefully"
-    echo "2. If sensitive content was found, secure it first"
-    echo "3. Update .gitignore/.dockerignore if recommended"
-    echo "4. Execute git commands one group at a time"
-    echo "5. Review each commit before pushing"
-    echo ""
-    print_warning "Never commit sensitive data like API keys, passwords, or tokens!"
+    if [[ "$QUIET" != true ]]; then
+        echo ""
+        print_header "Next Steps"
+        echo "1. Review the suggestions above carefully"
+        echo "2. If sensitive content was found, secure it first"
+        echo "3. Update .gitignore/.dockerignore if recommended"
+        echo "4. Execute git commands one group at a time"
+        echo "5. Review each commit before pushing"
+        echo ""
+        print_warning "Never commit sensitive data like API keys, passwords, or tokens!"
+    fi
 }
 
 # --- Pre-push scan function ---
@@ -1249,12 +1321,13 @@ run_pre_push_scan() {
 
 # --- Help ---
 show_help() {
-    echo "Gemini Git Helper v2.4"
+    echo "Gemini Git Helper v3.0"
     echo ""
     echo "Usage: $(basename "$0") [OPTIONS]"
     echo ""
     echo "Options:"
     echo "  --local, -l         Use local analysis only (no API call)"
+    echo "  --quiet, -q         Suppress decorative output (keep errors + suggestions)"
     echo "  --pre-commit        Fast secrets-only scan for git hooks (exit 1 if found)"
     echo "  --pre-push RANGE    Scan commits being pushed (for pre-push hook)"
     echo "  --scan-history, -s  Scan commit history for secrets"
@@ -1276,7 +1349,9 @@ show_help() {
     echo ""
     echo "Examples:"
     echo "  $(basename "$0")                    # Full analysis with Gemini API"
-    echo "  $(basename "$0") --local            # Quick local analysis without API"
+    echo "  $(basename "$0") --quiet            # Minimal output (good for Claude Code/CI)"
+    echo "  $(basename "$0") --local            # Local analysis with grouped suggestions"
+    echo "  $(basename "$0") --local --quiet    # Compact grouped suggestions"
     echo "  $(basename "$0") --scan-history     # Scan last 50 commits for secrets"
     echo "  $(basename "$0") -s --commits 100   # Scan last 100 commits"
     echo "  $(basename "$0") -s --all-history   # Scan entire git history"
@@ -1331,6 +1406,10 @@ main() {
                 HISTORY_SINCE="$2"
                 shift 2
                 ;;
+            --quiet|-q)
+                QUIET=true
+                shift
+                ;;
             --help|-h)
                 show_help
                 exit 0
@@ -1367,7 +1446,7 @@ main() {
 
     # History scanning mode
     if [ "$SCAN_HISTORY" = true ]; then
-        print_header "Gemini Git Helper v2.4 (History Scan)"
+        print_header "Gemini Git Helper v3.0 (History Scan)"
         check_git_repo
         scan_commit_history
         exit $?
@@ -1375,9 +1454,9 @@ main() {
 
     # Normal commit helper mode
     if [ "$USE_LOCAL_ONLY" = true ]; then
-        print_header "Gemini Git Helper v2.4 (Local Mode)"
+        print_header "Gemini Git Helper v3.0 (Local Mode)"
     else
-        print_header "Gemini Git Helper v2.4"
+        print_header "Gemini Git Helper v3.0"
     fi
 
     check_git_repo
