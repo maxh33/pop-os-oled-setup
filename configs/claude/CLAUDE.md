@@ -1,14 +1,89 @@
 # Global Claude Code Guidelines
 
+## Core Development Principles
+
+### 🔒 Environment Variables First (MANDATORY)
+
+**NEVER hardcode credentials, API keys, or sensitive data in code.**
+
+This is a non-negotiable security requirement for ALL projects.
+
+#### Required Practices
+
+1. **Use environment variables for ALL credentials:**
+   - API keys, tokens, passwords
+   - Database connection strings
+   - Service account credentials
+   - OAuth client secrets
+
+2. **Storage locations (in order of preference):**
+   - `~/.secrets` (chmod 600) — Global credentials, sourced by ~/.bashrc
+   - `~/.gemini/.env` — Gemini CLI-specific keys
+   - Project `.env` files — Project-specific vars (MUST be in .gitignore)
+
+3. **Reference in code:**
+   ```python
+   # ✅ CORRECT
+   api_key = os.getenv('GEMINI_API_KEY')
+
+   # ❌ WRONG - NEVER DO THIS
+   api_key = 'AIzaSyC...'  # Hardcoded key
+   ```
+
+   ```javascript
+   // ✅ CORRECT
+   const apiKey = process.env.GEMINI_API_KEY;
+
+   // ❌ WRONG - NEVER DO THIS
+   const apiKey = 'AIzaSyC...';  // Hardcoded key
+   ```
+
+   ```bash
+   # ✅ CORRECT
+   curl -H "Authorization: Bearer $GEMINI_API_KEY" https://api.example.com
+
+   # ❌ WRONG - NEVER DO THIS
+   curl -H "Authorization: Bearer AIzaSyC..." https://api.example.com
+   ```
+
+4. **Defense mechanisms (already active):**
+   - gemini-git-helper.sh scans for hardcoded secrets
+   - Pre-commit hook blocks commits with secrets
+   - Pre-push hook blocks pushes with secrets
+   - gitleaks scans commit history
+
+#### When Writing Code
+
+- **Before committing:** Run `gemini-git-helper.sh` to scan for secrets
+- **Use placeholders in templates:** `'your-api-key-here'`, `'YOUR_API_KEY'`
+- **Document env vars:** List required env vars in project README
+- **Never bypass hooks:** Don't use `git commit --no-verify` to skip secret detection
+
+#### If You Find Hardcoded Secrets
+
+1. **Stop immediately** — Do NOT commit
+2. Extract to environment variable
+3. Add to appropriate `.gitignore` pattern
+4. Run `gemini-git-helper.sh` to verify clean
+
+**This applies to ALL programming languages, ALL frameworks, ALL projects.**
+
+---
+
 ## Custom Scripts
 
-### gemini-git-helper.sh (v2.4)
+### gemini-git-helper.sh (v3.0)
 **Location:** `/home/max/bin/gemini-git-helper.sh`
 
 AI-powered git commit assistant with **defense-in-depth** secret protection:
 - Self-check blocks execution if script contains hardcoded secrets
 - Pre-commit hook blocks commits with secrets
-- **Pre-push hook blocks pushes with secrets** (NEW in v2.4)
+- Pre-push hook blocks pushes with secrets
+- **`--quiet` mode** (NEW in v3.0 — suppresses decorative output, works in Claude Code/CI)
+- **Improved `--local` mode** (NEW in v3.0 — directory-based grouping, multi-commit suggestions)
+- **Capped file previews** (NEW in v3.0 — max 10 files/50 lines, reduces API token waste)
+- Uses temp file for API requests (v2.5 — fixes "Argument list too long")
+- Smart diff truncation at 100KB for API calls
 - Scans commit history for leaked secrets (uses gitleaks)
 - Validates .gitignore/.dockerignore patterns
 - Groups changes by topic
@@ -17,8 +92,10 @@ AI-powered git commit assistant with **defense-in-depth** secret protection:
 
 #### Commit Helper Mode (default)
 ```bash
-cd /path/to/repo && gemini-git-helper.sh          # Full analysis with Gemini API
-cd /path/to/repo && gemini-git-helper.sh --local  # Quick local analysis (no API)
+cd /path/to/repo && gemini-git-helper.sh                   # Full analysis with Gemini API
+cd /path/to/repo && gemini-git-helper.sh --quiet           # Minimal output (Claude Code/CI)
+cd /path/to/repo && gemini-git-helper.sh --local           # Local grouped analysis (no API)
+cd /path/to/repo && gemini-git-helper.sh --local --quiet   # Compact grouped suggestions
 ```
 
 #### History Scanning Mode (audit existing commits)
@@ -41,7 +118,8 @@ gemini-git-helper.sh -s --since abc1234
 #### Options
 | Flag | Description |
 |------|-------------|
-| `--local, -l` | Use local analysis only (no API call) |
+| `--local, -l` | Use local analysis only (no API call) — now with grouped suggestions |
+| `--quiet, -q` | Suppress decorative output (keep errors, warnings, suggestions) |
 | `--pre-commit` | Fast secrets-only scan for git hooks (exit 1 if found) |
 | `--pre-push RANGE` | Scan commits being pushed (for pre-push hook) |
 | `--scan-history, -s` | Scan commit history for secrets |
@@ -69,7 +147,7 @@ Global hooks are enabled via: `git config --global core.hooksPath /home/max/bin/
 - Blocks commits containing secrets
 - Bypass: `git commit --no-verify` (not recommended)
 
-**Pre-Push Hook** (`/home/max/bin/git-hooks/pre-push`) - NEW in v2.4:
+**Pre-Push Hook** (`/home/max/bin/git-hooks/pre-push`):
 - Runs `gemini-git-helper.sh --pre-push <range>`
 - Scans commits being pushed for secrets
 - Last-line defense before secrets reach remote
@@ -479,6 +557,10 @@ gemini-git-helper.sh
 git commit -m "feat(scope): description"
 ```
 
+**Commit rules:**
+- **NEVER add `Co-Authored-By` trailers** to commit messages — the user does not want AI attribution in commits
+- Keep commit messages clean: just the conventional commit format, no trailers
+
 **Audit workflow (check for leaked secrets):**
 ```bash
 # 1. Scan commit history for secrets
@@ -584,6 +666,22 @@ git filter-repo --replace-text expressions.txt
 git push --force --all
 ```
 
+### Centralized Secrets Strategy (~/.secrets)
+
+All API keys and credentials are stored in `~/.secrets` (chmod 600), sourced by `~/.bashrc`:
+
+```bash
+# ~/.secrets format (NEVER commit this file)
+export GEMINI_API_KEY='your-key-here'
+export OTHER_API_KEY='your-other-key-here'
+```
+
+**Rules:**
+- `~/.secrets` is **never committed** to any repository
+- All repos should have `*secret*` in `.gitignore` as a safety net
+- Do NOT use project-level `.env` files for global API keys — use `~/.secrets`
+- After editing, run `source ~/.bashrc` or open a new terminal
+
 ---
 
 ## Dual-Boot Setup
@@ -619,6 +717,43 @@ rm, mv, rmdir, chmod, chown
 ```
 /etc, /sys, /root, /var, /boot, /usr, /bin, /sbin
 ```
+
+---
+
+## System Change Tracking (pop-os-oled-setup)
+
+**Repository:** `/mnt/storage/Programacao/Repositorios/pop-os-oled-setup/`
+**Purpose:** System restoration — replicate current Pop!_OS setup from scratch.
+
+**IMPORTANT:** When making system-level changes, ALWAYS suggest saving them to this repository. This includes:
+
+| Change Type | Repo Location | Example |
+|-------------|---------------|---------|
+| Shell config (~/.bashrc, aliases) | `configs/shell/` | Adding new sourcing patterns |
+| Systemd services/timers | `configs/systemd/` | New user services |
+| Audio/PipeWire/WirePlumber | `configs/pipewire/`, `configs/wireplumber/` | Audio config changes |
+| SSH config | `configs/ssh/` | SSH config templates |
+| Sudoers rules | `configs/sudoers.d/` | New passwordless sudo rules |
+| udev rules | `configs/udev/` | Hardware detection rules |
+| Terminal config (Kitty) | `configs/kitty/` | Theme or shortcut changes |
+| Claude/AI config | `configs/claude/` | CLAUDE.md, MCP servers |
+| VSCodium settings | `configs/vscodium/` | Editor preferences |
+| New tool setup | `docs/XX-tool-setup.md` | Documentation for new tools |
+| Install steps | `scripts/install.sh` | New install automation |
+| Package lists | `packages/` | New apt/flatpak/npm packages |
+
+**Workflow:**
+1. Make the system change (edit dotfile, create service, etc.)
+2. Suggest: "This is a system-level change. Should I save it to pop-os-oled-setup?"
+3. Copy/update the relevant config file in the repo
+4. Update documentation if needed
+5. Suggest running `gemini-git-helper.sh` for commit
+
+**Rules:**
+- NEVER save actual secrets or API keys to the repo
+- Use placeholder values in templates (e.g., `your-key-here`)
+- Config files in the repo are reference copies — `install.sh` deploys them
+- Always check if the file already exists in the repo before creating duplicates
 
 ---
 
@@ -751,3 +886,32 @@ The watchdog only runs the fix when needed (sink missing, wrong default, or pin 
 - **Node.js:** v24.13.0 (nvm)
 - **Python:** 3.x
 - **Shell:** bash
+
+---
+
+## JoiasMax Project (3-Repo Architecture)
+
+### Repositories
+
+| Repo | Linux Path | Purpose |
+|------|-----------|---------|
+| odoo | `/mnt/storage/Programacao/Repositorios/odoo` | Odoo 18 multi-tenant ERP (jewelry pricing module) |
+| odoo-ecommerce | `/mnt/storage/Programacao/Repositorios/odoo-ecommerce` | WordPress/WooCommerce + Python integration layer |
+| automation-platform | `/mnt/storage/Programacao/Repositorios/automation-platform` | n8n workflow automation |
+
+Each repo has its own `CLAUDE.md` with project-specific instructions.
+
+### Windows Planning Docs Archive
+
+Planning docs were originally created in Windows Claude Code sessions at:
+- **Windows path**: `C:\Users\Admin\.claude\plans\` (on `/dev/nvme0n1p3`)
+- **Linux mount**: `/mnt/windows-inspect/Users/Admin/.claude/plans/` (read-only NTFS, mount on demand)
+
+All 16 plan files (416KB) have been **copied to**: `odoo-ecommerce/docs/plans/`
+- Master plan: `docs/plans/00-MASTER-5-WEEK-PLAN.md`
+- The Windows copies are the originals; the odoo-ecommerce copies are the working versions
+
+### Gemini API Keys (Dual-Boot)
+
+- **Linux key** (`~/.secrets`): Active, used by gemini-git-helper.sh
+- **Windows key**: Different key, exposed in Windows Claude Code config — should be revoked at Google AI Studio when convenient
