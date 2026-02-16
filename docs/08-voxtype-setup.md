@@ -58,7 +58,119 @@ systemctl --user stop voxtype
 journalctl --user -u voxtype -f
 ```
 
+## dotool Installation (Required for Non-US Keyboards)
+
+**Why dotool?** VoxType supports multiple typing drivers, but for non-US keyboard layouts (especially with special characters like ç, ã, é), **dotool** is the most reliable:
+
+| Driver | BR Layout | Portuguese chars | Speed | Notes |
+|--------|-----------|------------------|-------|-------|
+| **dotool** | ✅ | ✅ | Fast | Best overall - handles layouts natively |
+| wtype | ❌ | ✅ | Fast | Ignores keyboard layout, produces gibberish |
+| ydotool | ✅ | ❌ | Fast | Cuts off at special chars (ç, ã, é) |
+| clipboard | ✅ | ✅ | N/A | Fallback mode, works everywhere |
+
+### Install Dependencies
+
+```bash
+sudo apt install -y gcc golang libxkbcommon-dev scdoc git
+```
+
+### Build and Install dotool
+
+```bash
+# Clone from source (not in Ubuntu repos)
+cd /tmp
+git clone https://git.sr.ht/~geb/dotool
+cd dotool
+
+# Build and install
+./build.sh
+sudo ./build.sh install
+
+# Configure udev rules and permissions
+sudo udevadm control --reload
+sudo udevadm trigger
+sudo usermod -aG input $USER
+```
+
+### Post-Install
+
+**Reboot required** for group membership to take effect.
+
+After reboot, verify dotool works:
+```bash
+# Test typing (should type "hello" in focused window)
+echo "type hello" | dotool
+```
+
+### Configure VoxType to Use dotool
+
+VoxType is already configured to prefer dotool in `~/.config/voxtype/config.toml`:
+```toml
+driver_order = ["dotool", "wtype", "ydotool", "clipboard"]
+dotool_xkb_layout = "br"
+```
+
 ## Troubleshooting
+
+### Typing gibberish / wrong characters after reboot
+
+**Symptom:** Transcriptions are correct in logs (`journalctl --user -u voxtype`), but gibberish (numbers, symbols, wrong characters) appears on screen.
+
+**Cause:** wtype doesn't support non-US keyboard layouts. It always types with US layout regardless of system settings.
+
+**Fix:** Install dotool (see installation section above) and ensure `driver_order` starts with `"dotool"`:
+```toml
+[output]
+driver_order = ["dotool", "wtype", "ydotool", "clipboard"]
+dotool_xkb_layout = "br"  # Match your keyboard layout
+```
+
+**Diagnosis:**
+```bash
+# Check which driver is being used
+journalctl --user -u voxtype | grep -i 'using.*driver'
+
+# Verify keyboard layout
+localectl status | grep 'X11 Layout'
+```
+
+### Portuguese characters cut off (ç, ã, é, ó)
+
+**Symptom:** Typing stops at Portuguese special characters. Only text before the character appears.
+
+**Cause:** ydotool has incomplete Unicode support and chokes on characters outside ASCII range.
+
+**Fix:** Use dotool (full Unicode support) or clipboard mode:
+```toml
+[output]
+driver_order = ["dotool", "wtype", "ydotool", "clipboard"]  # dotool first
+# OR force clipboard mode (works everywhere but slower):
+# mode = "clipboard"
+```
+
+**Driver Comparison:**
+- **Best:** dotool (layout support + Unicode + speed)
+- **Fallback:** clipboard (always works, but relies on paste)
+- **Avoid for Portuguese:** ydotool (no Unicode), wtype (no BR layout)
+
+### Browser typing too slow or dropping characters
+
+**Symptom:** Text types very slowly in browsers (Chrome, Firefox, Brave) or drops/cuts off characters.
+
+**Cause:** Browser input fields need short delays to prevent dropped keystrokes. Without delays, browsers can't keep up with fast typing and miss characters.
+
+**Fix:** Adjust typing delays in `~/.config/voxtype/config.toml`:
+```toml
+[output]
+type_delay_ms = 3          # Delay between keystrokes (balance speed/reliability)
+pre_type_delay_ms = 50     # Wait before typing starts (critical for browsers)
+```
+
+**Tuning:**
+- `type_delay_ms`: Start at 3ms, increase to 5-10ms if still dropping chars
+- `pre_type_delay_ms`: 50ms works well, reduce to 20-30ms for faster startup
+- Trade-off: Lower = faster, Higher = more reliable
 
 ### VoxType shows "stopped" / "idle"
 This is normal — it means the daemon is running and waiting for input.
@@ -173,13 +285,20 @@ nvidia-smi
 
 ## Installation from Repo
 ```bash
-# Copy systemd service
+# Copy systemd services
 cp configs/voxtype/voxtype.service ~/.config/systemd/user/
+cp configs/voxtype/ydotoold.service ~/.config/systemd/user/  # Optional: ydotool daemon
 systemctl --user daemon-reload
 systemctl --user enable voxtype.service
+# systemctl --user enable ydotoold.service  # Only if using ydotool
+
+# Copy config (will use dotool by default)
+cp configs/voxtype/config.toml ~/.config/voxtype/
 
 # Disable XDG autostart duplicates (prevent COSMIC from launching duplicates)
 cp configs/voxtype/voxtype.desktop ~/.config/autostart/
 cp configs/voxtype/openwhispr.desktop ~/.config/autostart/
 cp configs/voxtype/openwhispr-x11.desktop ~/.config/autostart/
+
+# Install dotool (see "dotool Installation" section above)
 ```
