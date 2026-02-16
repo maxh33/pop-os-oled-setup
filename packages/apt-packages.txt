@@ -14,6 +14,11 @@ brave-browser
 bsdutils
 build-essential
 ca-certificates
+gcc
+git
+golang
+libxkbcommon-dev
+scdoc
 codium
 console-setup
 console-setup-linux
@@ -390,6 +395,7 @@ wspanish
 wswiss
 wtype
 xdg-user-dirs
+ydotoold
 xkb-data
 xxd
 zlib1g
