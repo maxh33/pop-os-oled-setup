@@ -141,11 +141,22 @@ fallback_to_clipboard = true
 #   driver_order = ["wtype", "ydotool", "dotool", "clipboard"]
 # Example: use only ydotool, no fallback:
 #   driver_order = ["ydotool"]
-# driver_order = ["wtype", "dotool", "ydotool", "clipboard"]
+# Prefer dotool for best keyboard layout + Unicode support
+# dotool handles both BR layout and Portuguese characters (ç, ã, é, ó)
+driver_order = ["dotool", "wtype", "ydotool", "clipboard"]
+
+# Keyboard layout for dotool (required for non-US layouts)
+dotool_xkb_layout = "br"
 
 # Delay between typed characters in milliseconds
 # 0 = fastest possible, increase if characters are dropped
-type_delay_ms = 0
+# Optimized for speed with dotool (more efficient than ydotool/wtype)
+type_delay_ms = 3
+
+# Delay before typing starts (milliseconds)
+# Prevents browsers from dropping first characters
+# Optimized for speed while maintaining browser compatibility
+pre_type_delay_ms = 50
 
 # Automatically submit (send Enter key) after outputting transcribed text
 # Useful for chat applications, command lines, or forms where you want
