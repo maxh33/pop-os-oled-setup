@@ -197,6 +197,7 @@ libnettle8t64
 libnewt0.52
 libnpth0t64
 libnss-systemd
+libnss3-tools
 libp11-kit0
 libpam-cap
 libpam-modules
