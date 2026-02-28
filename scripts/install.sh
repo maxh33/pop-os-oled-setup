@@ -23,6 +23,7 @@ mkdir -p ~/.config/pipewire/pipewire.conf.d
 mkdir -p ~/.config/systemd/user
 mkdir -p ~/.local/bin
 mkdir -p ~/.local/state
+mkdir -p ~/.ipython/profile_default/startup
 
 # Create ~/.secrets from template if it doesn't exist
 if [ ! -f ~/.secrets ]; then
@@ -107,6 +108,45 @@ echo "Configuring Bluetooth audio settings..."
 wpctl settings bluetooth.autoswitch-to-headset-profile false 2>/dev/null
 wpctl settings -s bluetooth.autoswitch-to-headset-profile 2>/dev/null
 
+# Install WakaTime terminal tracking (if wakatime.cfg exists — i.e. VSCodium already set it up)
+if [ -f ~/.wakatime.cfg ]; then
+    echo ""
+    echo "Setting up WakaTime terminal tracking..."
+
+    # terminal-wakatime
+    if [ ! -f ~/.wakatime/terminal-wakatime ]; then
+        echo "  Installing terminal-wakatime..."
+        curl -fsSL http://hack.club/terminal-wakatime.sh | bash
+    else
+        echo "  terminal-wakatime already installed, skipping."
+    fi
+
+    # IPython startup hook
+    if [ ! -f ~/.ipython/profile_default/startup/wakatime_startup.py ]; then
+        echo "  Installing IPython WakaTime startup hook..."
+        cp "$REPO_DIR/configs/wakatime/ipython_wakatime_startup.py" \
+           ~/.ipython/profile_default/startup/wakatime_startup.py
+    else
+        echo "  IPython WakaTime hook already installed, skipping."
+    fi
+
+    # Python packages (ipython + repl-python-wakatime)
+    if ! python3 -c "import repl_python_wakatime" 2>/dev/null; then
+        echo "  Installing Python WakaTime packages..."
+        pip install --break-system-packages repl-python-wakatime ipython
+    else
+        echo "  repl-python-wakatime already installed, skipping."
+    fi
+
+    echo "  WakaTime terminal tracking configured."
+    echo "  Run 'source ~/.bashrc' or open a new terminal to activate."
+    echo "  See docs/15-wakatime-setup.md for details."
+else
+    echo ""
+    echo "NOTE: ~/.wakatime.cfg not found. Skipping WakaTime terminal setup."
+    echo "      Install VSCodium + WakaTime extension first, then re-run this script."
+fi
+
 echo ""
 echo "=== Installation Complete ==="
 echo ""
@@ -115,5 +155,7 @@ echo "1. Test audio: paplay /usr/share/sounds/freedesktop/stereo/complete.oga"
 echo "2. If no sound, toggle HDMI Deep Color in TV settings"
 echo "3. Switch audio: audio-switch.sh [hdmi|bluetooth|bluetooth <name>]"
 echo "4. Check docs/02-nvidia-hdmi-audio.md for troubleshooting"
+echo "5. Open a new terminal to activate WakaTime terminal tracking"
+echo "6. Dashboard: https://wakatime.com/dashboard"
 echo ""
 echo "Enjoy your distortion-free HDMI audio!"

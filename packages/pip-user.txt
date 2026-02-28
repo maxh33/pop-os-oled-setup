@@ -1,0 +1,12 @@
+# Python user-installed packages
+# Install with: pip install --break-system-packages <package>
+# Note: pip defaults to ~/.local/lib/python3.x/site-packages/ (user install)
+#
+# Bulk install:
+# pip install --break-system-packages $(grep -v '^#' packages/pip-user.txt | tr '\n' ' ')
+
+# Enhanced Python REPL
+ipython
+
+# WakaTime tracking for IPython sessions
+repl-python-wakatime

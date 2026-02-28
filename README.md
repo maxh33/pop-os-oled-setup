@@ -43,13 +43,18 @@ paplay /usr/share/sounds/freedesktop/stereo/complete.oga
 |-----|-------------|
 | [HARDWARE.md](HARDWARE.md) | Full hardware specs and requirements |
 | [02-nvidia-hdmi-audio.md](docs/02-nvidia-hdmi-audio.md) | **THE FIX** - HDMI audio distortion solution |
-| [05-development-tools.md](docs/05-development-tools.md) | Dev environment setup |
+| [05-development-tools.md](docs/05-development-tools.md) | Dev environment setup (Node, Python, Docker, VSCodium, WakaTime) |
 | [06-kitty-shortcuts.md](docs/06-kitty-shortcuts.md) | Kitty terminal shortcuts |
 | [07-epson-l3150-printer.md](docs/07-epson-l3150-printer.md) | Epson L3150 printer/scanner setup |
-| [08-voxtype-setup.md](docs/08-voxtype-setup.md) | Voxtype speech-to-text setup |
+| [08-voxtype-setup.md](docs/08-voxtype-setup.md) | VoxType speech-to-text setup |
 | [09-gemini-setup.md](docs/09-gemini-setup.md) | Gemini AI CLI setup |
 | [10-fzf-history-search.md](docs/10-fzf-history-search.md) | FZF fuzzy history search |
 | [11-blesh-setup.md](docs/11-blesh-setup.md) | ble.sh syntax highlighting & auto-suggestions |
+| [12-windows-docker-container.md](docs/12-windows-docker-container.md) | Windows Docker container setup |
+| [13-openvpn-setup.md](docs/13-openvpn-setup.md) | OpenVPN configuration |
+| [14-lg-buddy-setup.md](docs/14-lg-buddy-setup.md) | LG Buddy TV companion app |
+| [15-wakatime-setup.md](docs/15-wakatime-setup.md) | WakaTime terminal & REPL tracking |
+| [16-certificado-digital-setup.md](docs/16-certificado-digital-setup.md) | Certificado digital A1 (ICP-Brasil) no Brave/Chromium |
 
 ## Key Fix Summary
 

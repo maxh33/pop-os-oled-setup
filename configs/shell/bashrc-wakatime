@@ -1,0 +1,7 @@
+# WakaTime Terminal Tracking (terminal-wakatime v1.1.5)
+# Add this to ~/.bashrc (AFTER all other configs, before ble-attach)
+# Tracks: git, npm, node, npx, python, docker, vim/nano
+# Project detection: auto from .git root, package.json, pyproject.toml, etc.
+
+export PATH="$HOME/.wakatime:$PATH"
+eval "$(terminal-wakatime init)"

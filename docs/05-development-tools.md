@@ -41,7 +41,28 @@ See `packages/npm-global.txt` for the list. Key ones:
 
 ### System Python
 - Python 3.12.3 (system)
-- pip with user packages
+- pip with user packages at `~/.local/lib/python3.12/site-packages/`
+
+### User-installed packages
+See `packages/pip-user.txt` for the list. Key ones:
+- `ipython` - Enhanced interactive Python REPL
+- `repl-python-wakatime` - WakaTime tracking for IPython sessions
+
+Install all:
+```bash
+pip install --break-system-packages $(cat packages/pip-user.txt | grep -v '^#' | tr '\n' ' ')
+```
+
+### IPython
+Enhanced Python REPL with syntax highlighting, auto-completion, and history.
+
+```bash
+pip install --break-system-packages ipython
+ipython   # launch
+```
+
+WakaTime tracking for IPython is set up via a startup hook.
+See `docs/15-wakatime-setup.md` for details.
 
 ### uv (Fast Python Package Manager)
 ```bash
@@ -192,6 +213,33 @@ codium --install-extension /tmp/copilot-chat.vsix
 - Inline code completions (autocomplete)
 - Chat panel (right sidebar — "Agent" mode with model selector)
 - Copilot CLI in terminal (`copilot` command — separate npm package)
+
+## WakaTime (Time Tracking)
+
+Tracks coding time across VSCodium, terminal, and Python REPL. Dashboard at wakatime.com.
+
+### VSCodium (automatic)
+Install the WakaTime extension from Open VSX. It sets up `~/.wakatime.cfg` and downloads
+the WakaTime CLI on first use.
+
+### Terminal tracking
+```bash
+curl -fsSL http://hack.club/terminal-wakatime.sh | bash
+source ~/.bashrc
+terminal-wakatime test   # verify
+```
+
+Reference: `configs/shell/bashrc-wakatime`
+
+### IPython tracking
+```bash
+pip install --break-system-packages repl-python-wakatime ipython
+mkdir -p ~/.ipython/profile_default/startup
+cp configs/wakatime/ipython_wakatime_startup.py \
+   ~/.ipython/profile_default/startup/wakatime_startup.py
+```
+
+See `docs/15-wakatime-setup.md` for full details, troubleshooting, and dashboard guide.
 
 ## Useful CLI Tools
 
