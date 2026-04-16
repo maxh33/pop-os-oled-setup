@@ -55,6 +55,7 @@ paplay /usr/share/sounds/freedesktop/stereo/complete.oga
 | [14-lg-buddy-setup.md](docs/14-lg-buddy-setup.md) | LG Buddy TV companion app |
 | [15-wakatime-setup.md](docs/15-wakatime-setup.md) | WakaTime terminal & REPL tracking |
 | [16-certificado-digital-setup.md](docs/16-certificado-digital-setup.md) | Certificado digital A1 (ICP-Brasil) no Brave/Chromium |
+| [17-obs-localvocal-transcription.md](docs/17-obs-localvocal-transcription.md) | OBS LocalVocal — Portuguese classroom transcription (Whisper Large V3, CUDA) |
 
 ## Key Fix Summary
 
