@@ -64,6 +64,7 @@ gir1.2-girepository-2.0
 gir1.2-glib-2.0
 git
 gnome-terminal
+gthumb
 gnupg
 gpgv
 grep
