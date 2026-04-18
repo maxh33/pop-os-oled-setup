@@ -25,12 +25,16 @@ if [ "$AUDIO_MODE" = "hdmi" ]; then
     # Mode is HDMI — enforce it (TV power cycle recovery)
     # Check where streams are actually going
     HDMI_INDEX=$(pactl list sinks short 2>/dev/null | grep "$HDMI_SINK" | awk '{print $1}')
-    NON_HDMI_INPUTS=$(pactl list sink-inputs short 2>/dev/null | grep -v "$HDMI_INDEX" | awk '{print $1}')
-    if [ -n "$NON_HDMI_INPUTS" ]; then
-        log "Watchdog - found streams not on HDMI, moving them..."
-        for input in $NON_HDMI_INPUTS; do
-            pactl move-sink-input "$input" "$HDMI_INDEX" 2>/dev/null
-        done
+    # In lecture mode, skip all stream routing — lecture-capture.sh handles Brave
+    LECTURE_MODE=$(cat "$HOME/.local/state/lecture-mode" 2>/dev/null || echo "off")
+    if [ "$LECTURE_MODE" != "on" ]; then
+        NON_HDMI_INPUTS=$(pactl list sink-inputs short 2>/dev/null | grep -v "$HDMI_INDEX" | awk '{print $1}')
+        if [ -n "$NON_HDMI_INPUTS" ]; then
+            log "Watchdog - found streams not on HDMI, moving them..."
+            for input in $NON_HDMI_INPUTS; do
+                pactl move-sink-input "$input" "$HDMI_INDEX" 2>/dev/null
+            done
+        fi
     fi
 
     # Also ensure configured default is HDMI

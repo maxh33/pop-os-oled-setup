@@ -61,6 +61,11 @@ chmod +x ~/.local/bin/hdmi-audio-*.sh
 chmod +x ~/.local/bin/audio-switch.sh
 chmod +x ~/.local/bin/display-verify.sh
 
+# Copy lecture capture script
+echo "Installing lecture-capture script..."
+cp "$REPO_DIR/configs/obs/lecture-capture.sh" ~/.local/bin/
+chmod +x ~/.local/bin/lecture-capture.sh
+
 # Ensure ~/.bashrc sources ~/.secrets
 if ! grep -q '\.secrets' ~/.bashrc; then
     echo ""
@@ -89,10 +94,12 @@ systemctl --user daemon-reload
 echo "Enabling services..."
 systemctl --user enable hdmi-audio-fix.service
 systemctl --user enable hdmi-audio-watchdog.timer
+systemctl --user enable pipewire-lecture-sink.service
 
 # Start watchdog timer
 echo "Starting watchdog timer..."
 systemctl --user start hdmi-audio-watchdog.timer
+systemctl --user start pipewire-lecture-sink.service
 
 # Restart PipeWire
 echo "Restarting PipeWire..."
