@@ -188,6 +188,11 @@ Example: `PROTOTIPAGEM-SABADO-11-04-8H`
 
 OBS writes `<path>.srt` and `<path>.vtt` during recording.
 
+> **Linux gotcha:** If the output path has no extension, OBS writes the SRT
+> **without** a `.srt` extension. The filename may also contain double-encoded
+> characters (e.g. `SÃ\x81BADO`). Use `python3 -c "import os; print(os.listdir('aulas/'))"` 
+> to get the exact filename, then pass it to `srt_to_vtt.py` via subprocess.
+
 ### Subtitle text source
 Sources `+` → **Text (FreeType 2)** → name: `LocalVocal Subtitles`
 
