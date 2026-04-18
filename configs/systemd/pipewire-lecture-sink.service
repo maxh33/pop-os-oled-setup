@@ -1,0 +1,12 @@
+[Unit]
+Description=PipeWire virtual sink for lecture audio capture
+After=pipewire.service
+Requires=pipewire.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/pactl load-module module-null-sink sink_name=lecture_capture sink_properties=device.description="Lecture_Capture"
+RemainAfterExit=yes
+
+[Install]
+WantedBy=default.target
