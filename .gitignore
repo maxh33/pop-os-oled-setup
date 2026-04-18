@@ -22,6 +22,10 @@ id_dsa*
 .DS_Store
 Thumbs.db
 
+# Stray screenshot files (GUIDs from clipboard/snipping tool)
+docs/{*.png
+docs/{*.jpg
+
 # Editor files
 *.swp
 *.swo

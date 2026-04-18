@@ -736,6 +736,7 @@ rm, mv, rmdir, chmod, chown
 | Sudoers rules | `configs/sudoers.d/` | New passwordless sudo rules |
 | udev rules | `configs/udev/` | Hardware detection rules |
 | Terminal config (Kitty) | `configs/kitty/` | Theme or shortcut changes |
+| OBS / lecture capture | `configs/obs/` | lecture-capture.sh, scene profiles |
 | Claude/AI config | `configs/claude/` | CLAUDE.md, MCP servers |
 | VSCodium settings | `configs/vscodium/` | Editor preferences |
 | New tool setup | `docs/XX-tool-setup.md` | Documentation for new tools |
