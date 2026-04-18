@@ -307,6 +307,9 @@ onlyoffice-desktopeditors
 open-whispr
 openssl
 passwd
+pavucontrol
+libopenblas0
+libopenblas0-pthread
 perl-base
 pop-desktop
 poppler-data
