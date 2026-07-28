@@ -1,5 +1,9 @@
 # Global Claude Code Guidelines
 
+## Claude Code — RTK (compressão de tokens)
+
+Um hook global do RTK (`rtk-ai/rtk`, binário Rust) está ativo e reescreve comandos Bash automaticamente para reduzir tokens de output (registrado em `~/.claude/settings.json`, hook `PreToolUse`/`Bash` → `rtk hook claude`). Documentado a fundo em `~/.claude/RTK.md` (arquivo local, gerado pelo próprio RTK — este backup estático não referencia `@RTK.md` porque não suporta includes). Reinstalação: `curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/refs/heads/master/install.sh | sh && rtk init -g --auto-patch`. Escape hatch: `rtk proxy <comando>` roda sem filtro.
+
 ## Core Development Principles
 
 ### 🔒 Environment Variables First (MANDATORY)
@@ -160,6 +164,19 @@ Global hooks are enabled via: `git config --global core.hooksPath /home/max/bin/
 3. Pre-push hook    -> Blocks pushes with secrets
 4. --scan-history   -> Audit existing commits
 ```
+
+---
+
+## AI Orchestration — Route Heavy Work to Codex
+
+The `codex@openai-codex` plugin is installed (official OpenAI plugin, `/codex:*` slash commands). Requires the Codex CLI (`@openai/codex`, installed globally via npm) to be logged in (`codex login` — ChatGPT account or OpenAI API key; never hardcode the key).
+
+**Hand token-heavy execution tasks to Codex instead of running them here:**
+- Bulk file edits across many files
+- Well-specced builds where the requirements are already fully defined
+- Bugs still failing after 2 fix attempts in this session
+
+Use `/codex:rescue` to delegate, `/codex:review` / `/codex:adversarial-review` for a second opinion on a diff, `/codex:transfer` to hand off a whole session. Always show the diff before writing when a delegated task returns changes. Do not enable the automatic `Stop`-hook review gate — it can loop long between Claude and Codex and burn through Codex usage limits; trigger reviews manually instead.
 
 ---
 

@@ -42,3 +42,6 @@ credentials.json
 
 # OpenVPN - ignore actual configs with real keys, keep templates
 configs/openvpn/*.ovpn
+
+# Claude Code local settings (machine-specific permissions/config, not the skills/agents)
+.claude/settings.local.json
