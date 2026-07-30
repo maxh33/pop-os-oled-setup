@@ -26,6 +26,12 @@ O hook global do RTK (`rtk-ai/rtk`) está ativo e reescreve comandos Bash automa
 
 **Se notar output truncado, corrompido ou incoerente** — especialmente em comandos que tocam hardware/estado real do sistema (`sudo hda-verb`, `systemctl`, `udevadm`, `xrandr`, os scripts em `scripts/hdmi-audio-*.sh`) — avisar o usuário imediatamente antes de agir sobre esse output. Escape hatch: `rtk proxy <comando>` roda sem filtro. Reverter tudo: restaurar `~/.claude/settings.json.bak`.
 
+## Claude Code — Ponytail (disciplina anti-over-engineering)
+
+Plugin `ponytail@ponytail` (`DietrichGebert/ponytail`) instalado globalmente — injeta, via hooks (`SessionStart`/`SubagentStart`/`UserPromptSubmit`), uma escada de decisão YAGNI/stdlib-first antes de qualquer implementação (existe necessidade real? já tem no código? stdlib resolve? recurso nativo? dependência já instalada? uma linha? só então código novo). Nível padrão fixado em `full` via `~/.config/ponytail/config.json`.
+
+Validado com mini-benchmark próprio (3 tickets oficiais do projeto, n=1, Sonnet 5, repo `tiangolo/full-stack-fastapi-template`@`cd83fc10`): -60% linhas de código, -36% custo, -67% tempo no total dos 3 tickets vs. baseline sem o skill — sem cortar nenhuma checagem de segurança/permissão nos 6 diffs revisados manualmente. Um dos 3 tickets teve o efeito invertido (o skill escreveu *mais* código porque adicionou testes pro endpoint novo) — o objetivo declarado da ferramenta nunca foi "menos tokens", é "só o que a tarefa precisa, sem cortar validação/segurança".
+
 ---
 
 ## Repository Structure

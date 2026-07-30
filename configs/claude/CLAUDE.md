@@ -4,6 +4,12 @@
 
 Um hook global do RTK (`rtk-ai/rtk`, binário Rust) está ativo e reescreve comandos Bash automaticamente para reduzir tokens de output (registrado em `~/.claude/settings.json`, hook `PreToolUse`/`Bash` → `rtk hook claude`). Documentado a fundo em `~/.claude/RTK.md` (arquivo local, gerado pelo próprio RTK — este backup estático não referencia `@RTK.md` porque não suporta includes). Reinstalação: `curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/refs/heads/master/install.sh | sh && rtk init -g --auto-patch`. Escape hatch: `rtk proxy <comando>` roda sem filtro.
 
+## Claude Code — Ponytail (disciplina anti-over-engineering)
+
+Plugin `ponytail@ponytail` (`DietrichGebert/ponytail`, MIT, requer `node` no PATH) instalado globalmente. Injeta via hooks (`SessionStart`/`SubagentStart`/`UserPromptSubmit` — sem colisão com o `PreToolUse` do RTK) uma escada de decisão YAGNI/stdlib-first antes de qualquer implementação de código. Reinstalação: `claude plugin marketplace add DietrichGebert/ponytail && claude plugin install ponytail@ponytail`. Nível padrão fixado em `full` via `~/.config/ponytail/config.json` (`{"defaultMode": "full"}`) — mesmo padrão de persistência do Caveman.
+
+Validado com mini-benchmark próprio antes de adotar (3 tickets oficiais do projeto, repo `tiangolo/full-stack-fastapi-template`@`cd83fc10`, Sonnet 5): -60% linhas de código, -36% custo, -67% tempo no total, sem cortar nenhuma checagem de segurança/permissão — mas o ganho não é uniforme (num dos 3 tickets o skill escreveu mais código porque adicionou testes legítimos pro endpoint novo).
+
 ## Core Development Principles
 
 ### 🔒 Environment Variables First (MANDATORY)
