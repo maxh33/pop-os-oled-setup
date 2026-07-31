@@ -10,6 +10,12 @@ Plugin `ponytail@ponytail` (`DietrichGebert/ponytail`, MIT, requer `node` no PAT
 
 Validado com mini-benchmark próprio antes de adotar (3 tickets oficiais do projeto, repo `tiangolo/full-stack-fastapi-template`@`cd83fc10`, Sonnet 5): -60% linhas de código, -36% custo, -67% tempo no total, sem cortar nenhuma checagem de segurança/permissão — mas o ganho não é uniforme (num dos 3 tickets o skill escreveu mais código porque adicionou testes legítimos pro endpoint novo).
 
+## Trivy + Semgrep (varredura de segurança manual)
+
+`trivy` (SCA/imagem/IaC) e `semgrep` (SAST) instalados localmente sem sudo — `configs/trivy/README.md` e `configs/semgrep/README.md` têm reinstalação completa. Cobrem o que o secret-scan dos git hooks não cobre. Ainda é uso manual — não está em hook de git nem em VPS nenhuma, decisão pendente até o workflow manual se provar no dia a dia.
+
+**Cuidado com WSL2**: rodar `trivy image` em lote (várias imagens grandes) ou `semgrep --config=auto` num repo sem cap de memória configurado pode travar a VM inteira (não só um terminal — todo WSL, exige reboot do Windows). Ver `docs/18-wsl2-vmmem-freeze.md` e `configs/wsl/.wslconfig` antes de rodar essas ferramentas numa máquina WSL nova.
+
 ## Core Development Principles
 
 ### 🔒 Environment Variables First (MANDATORY)

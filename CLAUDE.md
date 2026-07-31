@@ -32,6 +32,12 @@ Plugin `ponytail@ponytail` (`DietrichGebert/ponytail`) instalado globalmente —
 
 Validado com mini-benchmark próprio (3 tickets oficiais do projeto, n=1, Sonnet 5, repo `tiangolo/full-stack-fastapi-template`@`cd83fc10`): -60% linhas de código, -36% custo, -67% tempo no total dos 3 tickets vs. baseline sem o skill — sem cortar nenhuma checagem de segurança/permissão nos 6 diffs revisados manualmente. Um dos 3 tickets teve o efeito invertido (o skill escreveu *mais* código porque adicionou testes pro endpoint novo) — o objetivo declarado da ferramenta nunca foi "menos tokens", é "só o que a tarefa precisa, sem cortar validação/segurança".
 
+## Trivy + Semgrep (varredura de segurança manual)
+
+`trivy` (SCA/imagem/IaC) e `semgrep` (SAST) instalados localmente sem sudo — `configs/trivy/README.md` e `configs/semgrep/README.md` têm reinstalação completa. Cobrem o que o secret-scan dos git hooks não cobre. Ainda é uso manual — não está em hook de git nem em VPS nenhuma, decisão pendente até o workflow manual se provar no dia a dia.
+
+**Cuidado com WSL2**: rodar `trivy image` em lote (várias imagens grandes) ou `semgrep --config=auto` num repo sem cap de memória configurado pode travar a VM inteira (não só um terminal — todo WSL, exige reboot do Windows). Ver `docs/18-wsl2-vmmem-freeze.md` e `configs/wsl/.wslconfig` antes de rodar essas ferramentas numa máquina WSL nova.
+
 ---
 
 ## Repository Structure
