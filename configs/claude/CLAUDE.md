@@ -4,6 +4,8 @@
 
 Um hook global do RTK (`rtk-ai/rtk`, binário Rust) está ativo e reescreve comandos Bash automaticamente para reduzir tokens de output (registrado em `~/.claude/settings.json`, hook `PreToolUse`/`Bash` → `rtk hook claude`). Documentado a fundo em `~/.claude/RTK.md` (arquivo local, gerado pelo próprio RTK — este backup estático não referencia `@RTK.md` porque não suporta includes). Reinstalação: `curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/refs/heads/master/install.sh | sh && rtk init -g --auto-patch`. Escape hatch: `rtk proxy <comando>` roda sem filtro.
 
+**Suporte a opencode**: RTK também tem integração nativa via `rtk init -g --opencode` (plugin `~/.config/opencode/plugins/rtk.ts`). É o único do stack de token-optimization com plugin para opencode — Caveman/Ponytail/Codex são exclusivos do Claude Code. Ver `configs/opencode/README.md` para a matriz de compatibilidade completa.
+
 ## Claude Code — Ponytail (disciplina anti-over-engineering)
 
 Plugin `ponytail@ponytail` (`DietrichGebert/ponytail`, MIT, requer `node` no PATH) instalado globalmente. Injeta via hooks (`SessionStart`/`SubagentStart`/`UserPromptSubmit` — sem colisão com o `PreToolUse` do RTK) uma escada de decisão YAGNI/stdlib-first antes de qualquer implementação de código. Reinstalação: `claude plugin marketplace add DietrichGebert/ponytail && claude plugin install ponytail@ponytail`. Nível padrão fixado em `full` via `~/.config/ponytail/config.json` (`{"defaultMode": "full"}`) — mesmo padrão de persistência do Caveman.

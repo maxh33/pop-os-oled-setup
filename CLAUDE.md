@@ -38,6 +38,17 @@ Validado com mini-benchmark próprio (3 tickets oficiais do projeto, n=1, Sonnet
 
 **Cuidado com WSL2**: rodar `trivy image` em lote (várias imagens grandes) ou `semgrep --config=auto` num repo sem cap de memória configurado pode travar a VM inteira (não só um terminal — todo WSL, exige reboot do Windows). Ver `docs/18-wsl2-vmmem-freeze.md` e `configs/wsl/.wslconfig` antes de rodar essas ferramentas numa máquina WSL nova.
 
+## OpenCode — compatibilidade global
+
+O stack de token-optimization e segurança acima também cobre o opencode (`sst/opencode`), de forma parcial:
+
+- **RTK** — ✅ integração nativa via `rtk init -g --opencode` (plugin `~/.config/opencode/plugins/rtk.ts`)
+- **Caveman / Ponytail / Codex** — ❌ exclusivos do Claude Code (plugins de marketplace); o efeito do Ponytail (escada YAGNI/stdlib-first) foi embutido no `~/AGENTS.md` global
+- **Trivy / Semgrep** — ✅ CLIs standalone, funcionam em qualquer agente
+- **MCP servers** — ✅ mesmos servidores, configuráveis no opencode
+
+Diretrizes globais para opencode: `configs/opencode/AGENTS.md` (deploy → `~/AGENTS.md`). Matriz completa: `configs/opencode/README.md`.
+
 ---
 
 ## Repository Structure
@@ -117,6 +128,8 @@ Enabled globally via: `git config --global core.hooksPath ~/bin/git-hooks`
 
 - **configs/gemini/GEMINI.md** - Global security principles and patterns for Gemini CLI
 - **configs/claude/CLAUDE.md** - This file, adapted for Claude Code
+- **configs/opencode/AGENTS.md** - Global guidelines for opencode (deploy to `~/AGENTS.md`)
+- **configs/opencode/README.md** - OpenCode compatibility matrix and setup
 
 ---
 
