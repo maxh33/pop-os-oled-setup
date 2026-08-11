@@ -1,0 +1,8 @@
+[Unit]
+Description=JoiasMax — repricer diario (ambiente LOCAL apenas)
+After=docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/mnt/storage/Programacao/Repositorios/joiasmax-ecommerce
+ExecStart=/mnt/storage/Programacao/Repositorios/joiasmax-ecommerce/local-dev/repricer-daily-test.sh
