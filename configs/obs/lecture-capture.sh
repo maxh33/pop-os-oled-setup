@@ -7,13 +7,25 @@ LECTURE_SINK="lecture_capture"
 FLAG="$HOME/.local/state/lecture-mode"
 LOG="$HOME/.local/state/hdmi-audio-fix.log"
 
+restore_brave() {
+    local target
+    target=$(pactl list sinks short 2>/dev/null | grep -i "hdmi" | grep -v "$LECTURE_SINK" | head -1 | awk '{print $1}')
+    if [ -n "$target" ]; then
+        BRAVE_INPUTS=$(pactl list sink-inputs 2>/dev/null | grep -B20 "brave\|Brave" | grep "^Sink Input" | grep -oP '\d+')
+        for input in $BRAVE_INPUTS; do
+            pactl move-sink-input "$input" "$target" 2>/dev/null
+        done
+    fi
+}
+
 cleanup() {
+    restore_brave
     echo "off" > "$FLAG"
     echo "$(date): lecture-capture — stopped, Brave restored to HDMI" >> "$LOG"
     echo "Lecture mode OFF — Brave routing restored to HDMI."
     exit 0
 }
-trap cleanup INT TERM
+trap cleanup INT TERM HUP
 
 # Ensure virtual sink exists
 if ! pactl list sinks short 2>/dev/null | grep -q "$LECTURE_SINK"; then
