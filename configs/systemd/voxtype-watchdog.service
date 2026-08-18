@@ -1,0 +1,6 @@
+[Unit]
+Description=VoxType Watchdog - restarts voxtype if GameMode's end-hook missed it
+
+[Service]
+Type=oneshot
+ExecStart=/home/max/.local/bin/voxtype-watchdog.sh
