@@ -404,3 +404,5 @@ ydotoold
 xkb-data
 xxd
 zlib1g
+gamemode
+steam

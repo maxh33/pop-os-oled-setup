@@ -56,6 +56,7 @@ paplay /usr/share/sounds/freedesktop/stereo/complete.oga
 | [15-wakatime-setup.md](docs/15-wakatime-setup.md) | WakaTime terminal & REPL tracking |
 | [16-certificado-digital-setup.md](docs/16-certificado-digital-setup.md) | Certificado digital A1 (ICP-Brasil) no Brave/Chromium |
 | [17-obs-localvocal-transcription.md](docs/17-obs-localvocal-transcription.md) | OBS LocalVocal — Portuguese classroom transcription (Whisper Large V3, CUDA) |
+| [20-steam-gaming-setup.md](docs/20-steam-gaming-setup.md) | Steam/Proton install, GameMode integration, NTFS library reuse, 4K120 DSC limitation |
 
 ## Key Fix Summary
 
