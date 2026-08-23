@@ -6,6 +6,12 @@ Host *
     IdentityAgent ~/.1password/agent.sock
 
 # Example server
+# IdentitiesOnly yes is not optional here if you use an agent (1Password,
+# ssh-agent) with multiple keys loaded: without it, the agent offers every
+# key it holds, and a server with a low MaxAuthTries disconnects with
+# "Too many authentication failures" before it ever tries the right one —
+# looks like a broken key even when the key itself is fine.
+# See docs/22-netcup-ssh-lockout-recovery.md.
 Host myserver
     HostName your.server.ip
     User your_username
