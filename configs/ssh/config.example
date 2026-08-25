@@ -18,6 +18,21 @@ Host myserver
     IdentityFile ~/.ssh/id_ed25519
     IdentitiesOnly yes
 
+# Cloud VM (e.g. Oracle Cloud Free Tier ARM instance) — default user is
+# "ubuntu" on Ubuntu images, not root. Same IdentitiesOnly requirement as
+# above applies.
+Host mycloudvm
+    HostName your.instance.ip
+    User ubuntu
+    IdentityFile ~/.ssh/id_ed25519
+    IdentitiesOnly yes
+
+# Multi-machine access to the same server: generate a separate keypair per
+# machine (home, work laptop, etc.), give each its own Host alias pointing
+# at its own IdentityFile, and append every machine's *.pub to the
+# server's ~/.ssh/authorized_keys. Never copy a private key between
+# machines — one keypair per machine keeps revocation per-device.
+
 # GitHub
 Host github.com
     HostName github.com
