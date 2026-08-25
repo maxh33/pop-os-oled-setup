@@ -6,6 +6,8 @@ Um hook global do RTK (`rtk-ai/rtk`, binário Rust) está ativo e reescreve coma
 
 **Suporte a opencode**: RTK também tem integração nativa via `rtk init -g --opencode` (plugin `~/.config/opencode/plugins/rtk.ts`). É o único do stack de token-optimization com plugin para opencode — Caveman/Ponytail/Codex são exclusivos do Claude Code. Ver `configs/opencode/README.md` para a matriz de compatibilidade completa.
 
+**Cuidado com `git commit -m "..."` contendo crases**: mensagem de commit com `` `código inline` `` dentro de aspas duplas do `-m` sofre expansão de comando pelo próprio bash antes do RTK processar (crases = command substitution) — já corrompeu commit e deixou pathspec errors soltos (2026-08-25). Se a mensagem tiver crases/code span, escrever num arquivo e usar `git commit -F <arquivo>` em vez de `-m` inline.
+
 ## Claude Code — Ponytail (disciplina anti-over-engineering)
 
 Plugin `ponytail@ponytail` (`DietrichGebert/ponytail`, MIT, requer `node` no PATH) instalado globalmente. Injeta via hooks (`SessionStart`/`SubagentStart`/`UserPromptSubmit` — sem colisão com o `PreToolUse` do RTK) uma escada de decisão YAGNI/stdlib-first antes de qualquer implementação de código. Reinstalação: `claude plugin marketplace add DietrichGebert/ponytail && claude plugin install ponytail@ponytail`. Nível padrão fixado em `full` via `~/.config/ponytail/config.json` (`{"defaultMode": "full"}`) — mesmo padrão de persistência do Caveman.
@@ -569,6 +571,8 @@ gemini -p "@src/ has authentication been implemented?"
 - `git push` - Prevents accidental pushes
 - `git push --force` - Dangerous
 - `git reset --hard` - Data loss risk
+
+**`--no-verify` (commit or push) is blocked by the Claude Code auto-mode classifier at the tool layer, regardless of user authorization in the conversation.** Confirming a known false-positive hook with the user doesn't unblock it — there's no workaround via Bash. Hand the exact command to the user to run themselves (prefix `!` in the CLI). Hit repeatedly on 2026-08-25 against a repo whose pre-push secret scanner has a recurring false positive on a doc placeholder, re-triggering on every new branch push.
 
 **Allowed:**
 ```bash
