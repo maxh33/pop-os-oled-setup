@@ -42,6 +42,10 @@ See `packages/npm-global.txt` for the list. Key ones:
 ### System Python
 - Python 3.12.3 (system)
 - pip with user packages at `~/.local/lib/python3.12/site-packages/`
+- No bare `python` binary — only `python3`. Some tools (e.g. the RTK Claude Code hook) shell out to `python` unqualified and fail with `python: not found`. Fix: symlink `python` to `python3` in `~/.local/bin` (already first in PATH):
+  ```bash
+  ln -s "$(which python3)" ~/.local/bin/python
+  ```
 
 ### User-installed packages
 See `packages/pip-user.txt` for the list. Key ones:
