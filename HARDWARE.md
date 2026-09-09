@@ -4,20 +4,22 @@
 
 ### GPU — multi-GPU setup
 
-This machine has three GPUs installed. Only one drives the OLED display; the
+This machine has four GPUs installed. Only one drives the OLED display; the
 others are available for compute (AI/inference workloads — Whisper, etc.).
 
 | GPU | VRAM | Role | Driver stack |
 |---|---|---|---|
 | **NVIDIA RTX A2000** | 12GB | Compute — currently the active workhorse for AI/inference workloads | NVIDIA (CUDA) |
 | NVIDIA RTX 3070 (GA104) | 8GB GDDR6 | Display output — drives the OLED via HDMI (see HDMI audio fix below), available for compute too | NVIDIA (CUDA), driver 580.119.02, CUDA 13.0, PCI `0000:0a:00.1` (audio controller) |
-| AMD Instinct MI50, flashed with Radeon VII VBIOS | 16GB HBM2 | Compute, available — not currently in active use | AMD (ROCm) — separate driver stack from the two NVIDIA cards above |
+| AMD Instinct MI50, flashed with Radeon VII VBIOS | 16GB HBM2 | Compute, available — not currently in active use | AMD (ROCm) — separate driver stack from the NVIDIA cards |
+| AMD Radeon RX 6400 | 4GB | Compute, available — not currently in active use | AMD (amdgpu/Mesa, Vulkan) — RDNA2, not on the officially supported ROCm list |
 
 Practical implication: CUDA-only tooling (faster-whisper/ctranslate2, most
 NVIDIA-specific AI stacks) only targets the A2000/3070. The MI50 needs a
-ROCm-based path (or Vulkan, which crosses vendors — see VoxType, which uses
-Vulkan for exactly this reason). When picking which GPU a new service should
-use, don't assume "GPU 0" — verify with `nvidia-smi -L` (NVIDIA cards) and
+ROCm-based path; the RX 6400 realistically means Vulkan, not ROCm (crosses
+vendors — see VoxType, which uses Vulkan for exactly this reason). When
+picking which GPU a new service should use, don't assume "GPU 0" — verify
+with `nvidia-smi -L` (NVIDIA cards) and
 `rocm-smi` (MI50) which index maps to which card.
 
 ### Display
