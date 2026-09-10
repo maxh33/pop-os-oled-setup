@@ -59,6 +59,7 @@ paplay /usr/share/sounds/freedesktop/stereo/complete.oga
 | [20-steam-gaming-setup.md](docs/20-steam-gaming-setup.md) | Steam/Proton install, GameMode integration, NTFS library reuse, 4K120 DSC limitation |
 | [21-battlenet-diablo2-linux-setup.md](docs/21-battlenet-diablo2-linux-setup.md) | Battle.net on Lutris, black-screen/input Wine-build gotchas, NTFS library reuse, D2R + mods, GameMode/voxtype desync troubleshooting |
 | [23-wakapi-selfhost-cloudflare-tunnel.md](docs/23-wakapi-selfhost-cloudflare-tunnel.md) | Self-hosted Wakapi on Oracle ARM VPS via Cloudflare Tunnel, cert-based auth (no API token) |
+| [24-lgtv-companion-windows-issue.md](docs/24-lgtv-companion-windows-issue.md) | LGTV Companion (Windows dual-boot counterpart to LG Buddy) — idle-blank screen-wake failure, workaround, open investigation |
 
 ## Key Fix Summary
 

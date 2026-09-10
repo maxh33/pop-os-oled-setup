@@ -2,6 +2,8 @@
 
 LG Buddy automatically controls an LG WebOS TV used as a computer monitor. It turns the TV on/off in response to system events (startup, shutdown, sleep, wake, screen idle/resume).
 
+> Windows dual-boot side uses a different app (**LGTV Companion**) for the same job — see [24-lgtv-companion-windows-issue.md](24-lgtv-companion-windows-issue.md) for its idle-blank screen-wake failure and current status.
+
 **Repository:** https://github.com/maxh33/LG_Buddy
 
 ## Features
