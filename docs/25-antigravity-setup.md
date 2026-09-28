@@ -315,3 +315,41 @@ cd pop-os-oled-setup
 
 O script realiza a criação das pastas equivalentes em `$env:USERPROFILE\.gemini`, copia as configurações centrais e valida as dependências do ambiente Windows.
 
+---
+
+## 11. Automação com o Navegador Real (Evitando Sessões Virgens e Perda de Extensões)
+
+### 11.1. O Diagnóstico: Por que perfis clonados (`/tmp`) quebram a experiência
+Quando uma ferramenta agêntica clona uma pasta de perfil (`~/.config/BraveSoftware/Brave-Browser/Profile X`) para `/tmp` para iniciar uma instância com `--remote-debugging-port`:
+1. **Quebra de Integridade de Extensões**: O Chromium calcula assinaturas HMAC no arquivo `Secure Preferences` atreladas ao caminho absoluto original do perfil. Ao rodar em `/tmp`, a validação falha e o navegador desabilita silenciosamente extensões de terceiros (1Password, Dark Reader, adblockers).
+2. **Isolamento de Processo & Desconexão de Blobs**: A instância secundária roda em um processo de SO separado (`PID` diferente). Abas em tempo real, blobs gerados em memória (ex: `blob:https://web.whatsapp.com/...`) e sockets de sessão autenticada não são compartilhados com o navegador de uso diário.
+
+### 11.2. Abordagem 1: Bridge Nativa de Extensão via MCP (`claude-in-chrome`)
+Adicionado ao `~/.gemini/config/mcp_config.json` e ao repositório:
+```json
+"claude-in-chrome": {
+  "command": "claude",
+  "args": ["--claude-in-chrome-mcp"],
+  "disabled": false
+}
+```
+- **Como opera**: O servidor stdio do MCP conecta diretamente ao Native Messaging Host (`~/.config/BraveSoftware/Brave-Browser/NativeMessagingHosts/com.anthropic.claude_code_browser_extension.json`), comunicando-se com a extensão instalada no Brave principal (`PID` ativo).
+- **Vantagens**:
+  - Controla diretamente a janela ativa do usuário (`tabs_context_mcp`).
+  - Todas as extensões (1Password, Dark Reader) continuam 100% ativas e renderizadas.
+  - Todas as sessões, cookies e logins existentes são reutilizados na hora sem abrir janelas extras.
+  - Zero dependência de cotas de IA externas usando ferramentas locais de DOM/JS (`javascript_tool`, `get_page_text`, `navigate`, `tabs_create_mcp`, `tabs_close_mcp`).
+
+### 11.3. Abordagem 2: Navegador Diário com `--remote-debugging-port=9222` Nativo
+Para permitir que ferramentas agênticas baseadas em CDP (Playwright, browser-use, scripts Python) controlem o navegador sem criar instâncias paralelas:
+1. Copie o lançador desktop do sistema para o diretório de usuário:
+   ```bash
+   cp /usr/share/applications/brave-browser.desktop ~/.local/share/applications/brave-browser.desktop
+   ```
+2. Adicione a flag `--remote-debugging-port=9222` nas linhas `Exec`:
+   ```ini
+   Exec=/usr/bin/brave-browser-stable --remote-debugging-port=9222 %U
+   ```
+3. Ao iniciar o Brave diariamente pelo dock/menu do Pop!_OS, o navegador real sempre escutará na porta `9222`. Qualquer ferramenta pode se acoplar a ele via `http://localhost:9222` de forma transparente.
+
+

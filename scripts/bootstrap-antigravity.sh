@@ -61,6 +61,16 @@ if [[ -d "${HOME}/.config/BraveSoftware/Brave-Browser" && ! -e "${HOME}/.config/
     success "Symlink ~/.config/google-chrome configurado."
 fi
 
+# Configurar Brave nativo com CDP port 9222 para automação sem perfil virgem
+if [[ -f "/usr/share/applications/brave-browser.desktop" && ! -f "${HOME}/.local/share/applications/brave-browser.desktop" ]]; then
+    info "Configurando lançador desktop do Brave com --remote-debugging-port=9222..."
+    mkdir -p "${HOME}/.local/share/applications"
+    cp "/usr/share/applications/brave-browser.desktop" "${HOME}/.local/share/applications/brave-browser.desktop"
+    sed -i 's|Exec=/usr/bin/brave-browser-stable|Exec=/usr/bin/brave-browser-stable --remote-debugging-port=9222|g' "${HOME}/.local/share/applications/brave-browser.desktop"
+    update-desktop-database "${HOME}/.local/share/applications/" 2>/dev/null || true
+    success "Lançador do Brave com porta 9222 configurado."
+fi
+
 if command -v uv &> /dev/null; then
     if ! uv tool list | grep -q "browser-use" 2>/dev/null; then
         info "Instalando browser-use via uv..."
