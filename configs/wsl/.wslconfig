@@ -2,3 +2,4 @@
 memory=8GB
 processors=4
 swap=4GB
+networkingMode=mirrored

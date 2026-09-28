@@ -127,3 +127,106 @@ O AGY herda as mesmas regras inegociáveis do ambiente:
 Cópias das configurações estão armazenadas neste repositório em:
 - `configs/antigravity/GEMINI.md`: Espelho das instruções globais em `~/.gemini/config/GEMINI.md`.
 - `configs/antigravity/settings.json`: Espelho de `~/.gemini/antigravity-cli/settings.json`.
+
+---
+
+## 8. Controle de Navegador Web com Browser-Use & Chrome DevTools (CDP)
+
+O AGY suporta controle nativo e visual de navegadores Chromium em paridade total com o recurso "Claude in Chrome" do Claude Code, utilizando a biblioteca e CLI **`browser-use`** acoplados ao Chrome real do host via Chrome DevTools Protocol (CDP).
+
+### 8.1. Instalação e Requisitos
+
+1. **Instalação do CLI**:
+   ```bash
+   uv tool install browser-use
+   ```
+   Disponibiliza os binários `browser-use`, `bu` e `browser` no PATH.
+
+2. **Modelo de Visão e Raciocínio**:
+   O `browser-use` utiliza o Gemini nativamente consumindo a variável `GEMINI_API_KEY`:
+   ```python
+   from browser_use import ChatGoogle
+   llm = ChatGoogle(model="gemini-2.5-flash")
+   ```
+
+### 8.2. Arquitetura da Ponte WSL2 ↔ Windows Host
+
+Em ambientes de desenvolvimento onde o agente roda dentro do WSL2 (Ubuntu) e o Google Chrome roda no Windows:
+
+1. **Rede Espelhada Obrigatória (`networkingMode=mirrored`)**:
+   No Windows em `C:\Users\<user>\.wslconfig`:
+   ```ini
+   [wsl2]
+   memory=8GB
+   processors=4
+   swap=4GB
+   networkingMode=mirrored
+   ```
+   *Por que:* Sem o modo espelhado, o WSL2 opera sob uma rede NAT virtual e o Windows Firewall bloqueia conexões de entrada na porta de depuração (9222). Com `networkingMode=mirrored`, Windows e WSL compartilham o mesmo `localhost` (`127.0.0.1`) com latência zero e sem intermediários.
+   *Aplicação:* Rodar `wsl --shutdown` no PowerShell e reabrir o terminal.
+
+2. **Symlink do Perfil do Chrome**:
+   Para que o daemon do `browser-use` localize o arquivo `DevToolsActivePort` automaticamente no Linux:
+   ```bash
+   ln -sfn "/mnt/c/Users/<user>/AppData/Local/Google/Chrome/User Data" ~/.config/google-chrome
+   ```
+
+3. **Ativação da Depuração Remota no Chrome**:
+   - **Opção 1**: No Chrome já aberto, acesse `chrome://inspect/#remote-debugging` e clique em *"Allow remote debugging"*.
+   - **Opção 2**: Iniciar o Chrome diretamente com a porta e o perfil desejado:
+     ```cmd
+     "C:\Program Files\Google\Chrome\Application\chrome.exe" --remote-debugging-port=9222 --profile-directory="Profile 5"
+     ```
+
+### 8.3. Gotchas Críticos Observados em Produção
+
+1. **Chrome M128+ e WebSocket Puro (404 em `/json/version`)**:
+   Nas versões recentes do Chrome, os endpoints HTTP REST tradicionais (como `/json/version` e `/json/list`) retornam 404 por segurança. A conexão deve ser feita diretamente via WebSocket lendo a rota única do arquivo `DevToolsActivePort`:
+   `ws://127.0.0.1:9222/devtools/browser/<uuid>`
+2. **Caixa de Diálogo "Allow remote debugging?"**:
+   Ao iniciar o primeiro handshake CDP externo, o Chrome exibe um diálogo de segurança na interface do Windows solicitando aprovação do usuário. É necessário clicar em *"Allow"* uma única vez para destravar o handshake.
+3. **Eventos Sintéticos vs Cliques Reais em Popups/LTI**:
+   Eventos `element.click()` disparados via DOM injection frequentemente são bloqueados pelo popup blocker nativo do Chrome ao tentar abrir modais autenticados ou ferramentas LTI (ex: DreamShaper, Blackboard).
+   *Solução:* Disparar eventos reais de compositor via coordenadas calculadas:
+   ```python
+   # No browser-use CLI / CDP:
+   click_at_xy(x, y)
+   ```
+4. **Comportamento de Sessão de Portais Acadêmicos/SSO (LMS / LTI 1.3)**:
+   - Portais acadêmicos (como o da Cruzeiro do Sul) operam sob arquitetura SPA com tokens JWT/OAuth temporários que expiram com inatividade.
+   - Ferramentas externas acopladas (como DreamShaper via Blackboard) utilizam *one-time launch tokens* gerados via LTI. Se a sessão expirar ou o token cair, o refresh direto na aba externa falha (redireciona para tela de login). A retomada exige refazer o lançamento a partir do botão no Blackboard, que gera um token novo e abre uma aba autenticada automaticamente.
+
+### 8.4. Exemplos Práticos de Uso
+
+**Via CLI Interativo (`browser-use`)**:
+```bash
+browser-use <<'PY'
+goto_url("https://joiasmax.com.br")
+wait_for_load()
+print(page_info())
+PY
+```
+
+**Via Agente Autônomo com Visão (`Agent`)**:
+```python
+import asyncio
+from pathlib import Path
+from browser_use import Agent, Browser, ChatGoogle
+
+async def main():
+    lines = (Path.home() / ".config/google-chrome/DevToolsActivePort").read_text().splitlines()
+    ws_url = f"ws://127.0.0.1:{lines[0].strip()}{lines[1].strip()}"
+
+    browser = Browser(cdp_url=ws_url, is_local=True)
+    llm = ChatGoogle(model="gemini-2.5-flash")
+
+    agent = Agent(
+        task="Acesse o site, encontre o produto e adicione ao carrinho.",
+        llm=llm,
+        browser=browser,
+        use_vision=True,
+    )
+    await agent.run()
+
+asyncio.run(main())
+```

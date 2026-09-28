@@ -21,6 +21,7 @@ Cap `vmmem` memory/CPU/swap so a runaway process degrades instead of freezing th
 memory=8GB
 processors=4
 swap=4GB
+networkingMode=mirrored
 ```
 
 Adjust `memory=` to roughly half the host's RAM. Apply from PowerShell (outside WSL — a WSL instance can't shut itself down):
