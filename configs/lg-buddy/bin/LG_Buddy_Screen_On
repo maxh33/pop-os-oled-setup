@@ -18,7 +18,10 @@ echo "Turning TV on (screen wake)..."
 rm -f "$STATE_FILE"
 
 # Send Wake-on-LAN to wake the TV from standby
-wakeonlan "$tv_mac"
+for _ in 1 2 3; do
+    wakeonlan "$tv_mac" 2>/dev/null
+    sleep 0.3
+done
 
 # Wait for TV to accept WebSocket connections (retry loop for warm boot/EWS startup)
 sleep 4
