@@ -158,7 +158,18 @@ To avoid modifying `/usr/bin/` and keep the desktop screen monitor self-containe
 Rather than hardcoding `IDLE_TIMEOUT=300`, `LG_Buddy_Screen_Monitor` can detect the configured screen blank time dynamically from:
 `~/.config/cosmic/com.system76.CosmicIdle/v1/screen_off_time` (value in ms, e.g. `Some(600000)` = 600s). This keeps TV power-off in exact sync with the desktop display sleep.
 
+### TV Warm-Boot Wake Resilience (WOL Burst & Retry Loop)
+
+When waking from standby, the TV's network card wakes quickly but its embedded web server (EWS) requires 6–12 seconds to fully initialize the WebSocket listener. Connecting too early results in:
+```text
+websockets.exceptions.ConnectionClosedError: received 1008 (policy violation) Try Again Later (EWS)
+```
+To ensure 100% reliable wake-up:
+1. **WOL Burst on Subnet Broadcast:** Send a burst of 3 magic packets (0.3s apart) targeted to the subnet broadcast (e.g. `192.168.X.255`) to prevent packet loss across local network switches or virtual interfaces.
+2. **Adaptive Retry Loop:** After an initial 4s settling delay, attempt `set_input` in a loop (up to 7 attempts with 2s intervals). As soon as EWS is ready, the input switches immediately and the loop terminates cleanly.
+
 ## Reference Configs
 
 Configs saved in `configs/lg-buddy/` use placeholder values (`192.168.X.X`, `XX:XX:XX:XX:XX:XX`). Run `configure.sh` or manually edit after copying.
+
 
