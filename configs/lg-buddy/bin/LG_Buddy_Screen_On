@@ -20,9 +20,18 @@ rm -f "$STATE_FILE"
 # Send Wake-on-LAN to wake the TV from standby
 wakeonlan "$tv_mac"
 
-# Wait for TV to fully wake up and accept WebSocket connections
-sleep 8
+# Wait for TV to accept WebSocket connections (retry loop for warm boot/EWS startup)
+sleep 4
+success=false
+for i in {1..6}; do
+    if /usr/bin/LG_Buddy_PIP/bin/bscpylgtvcommand "$tv_ip" set_input "$input" 2>/dev/null; then
+        echo "TV switched to $input successfully (attempt $i)."
+        success=true
+        break
+    fi
+    sleep 2
+done
 
-# Set the input - this also turns on the TV if it's in standby
-/usr/bin/LG_Buddy_PIP/bin/bscpylgtvcommand "$tv_ip" set_input "$input" 2>&1 || \
-    echo "set_input failed (TV may need more time to wake)"
+if [ "$success" = false ]; then
+    echo "set_input failed after multiple attempts (TV may need more time to wake)"
+fi
