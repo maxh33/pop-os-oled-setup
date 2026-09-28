@@ -1,0 +1,15 @@
+{
+  "agentMode": "accept-edits",
+  "allowNonWorkspaceAccess": true,
+  "colorScheme": "dark",
+  "model": "Gemini 3.8 Flash (High)",
+  "statusLine": {
+    "type": "",
+    "command": "",
+    "enabled": true
+  },
+  "toolPermission": "always-proceed",
+  "trustedWorkspaces": [
+    "/home/notexam/Repositorios/joiasmax-ecommerce"
+  ]
+}

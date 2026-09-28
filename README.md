@@ -56,10 +56,14 @@ paplay /usr/share/sounds/freedesktop/stereo/complete.oga
 | [15-wakatime-setup.md](docs/15-wakatime-setup.md) | WakaTime terminal & REPL tracking |
 | [16-certificado-digital-setup.md](docs/16-certificado-digital-setup.md) | Certificado digital A1 (ICP-Brasil) no Brave/Chromium |
 | [17-obs-localvocal-transcription.md](docs/17-obs-localvocal-transcription.md) | OBS LocalVocal — Portuguese classroom transcription (Whisper Large V3, CUDA) |
+| [18-wsl2-vmmem-freeze.md](docs/18-wsl2-vmmem-freeze.md) | WSL2 memory freeze fix and .wslconfig setup |
+| [19-joiasmax-repricer-timer.md](docs/19-joiasmax-repricer-timer.md) | JoiasMax repricer systemd timer and service setup |
 | [20-steam-gaming-setup.md](docs/20-steam-gaming-setup.md) | Steam/Proton install, GameMode integration, NTFS library reuse, 4K120 DSC limitation |
 | [21-battlenet-diablo2-linux-setup.md](docs/21-battlenet-diablo2-linux-setup.md) | Battle.net on Lutris, black-screen/input Wine-build gotchas, NTFS library reuse, D2R + mods, GameMode/voxtype desync troubleshooting |
+| [22-netcup-ssh-lockout-recovery.md](docs/22-netcup-ssh-lockout-recovery.md) | NetCup VPS SSH lockout recovery via VNC console |
 | [23-wakapi-selfhost-cloudflare-tunnel.md](docs/23-wakapi-selfhost-cloudflare-tunnel.md) | Self-hosted Wakapi on Oracle ARM VPS via Cloudflare Tunnel, cert-based auth (no API token) |
 | [24-lgtv-companion-windows-issue.md](docs/24-lgtv-companion-windows-issue.md) | LGTV Companion (Windows dual-boot counterpart to LG Buddy) — idle-blank screen-wake failure, workaround, open investigation |
+| [25-antigravity-setup.md](docs/25-antigravity-setup.md) | Google Antigravity (AGY) CLI setup, rules & architecture |
 
 ## Key Fix Summary
 
