@@ -71,6 +71,40 @@ if [[ -f "/usr/share/applications/brave-browser.desktop" && ! -f "${HOME}/.local
     success "Lançador do Brave com porta 9222 configurado."
 fi
 
+# Garantir Native Messaging Host para Claude in Chrome bridge
+info "Verificando Native Messaging Host para Claude in Chrome..."
+CLAUDE_WRAPPER_DIR="${HOME}/.claude/chrome"
+mkdir -p "${CLAUDE_WRAPPER_DIR}"
+if [[ ! -f "${CLAUDE_WRAPPER_DIR}/chrome-native-host" ]]; then
+    cat << 'EOF' > "${CLAUDE_WRAPPER_DIR}/chrome-native-host"
+#!/bin/sh
+exec claude --chrome-native-host
+EOF
+    chmod +x "${CLAUDE_WRAPPER_DIR}/chrome-native-host"
+    success "Script chrome-native-host criado em ${CLAUDE_WRAPPER_DIR}."
+fi
+
+for BROWSER_DIR in "${HOME}/.config/BraveSoftware/Brave-Browser" "${HOME}/.config/google-chrome"; do
+    if [[ -d "${BROWSER_DIR}" ]]; then
+        NATIVE_DIR="${BROWSER_DIR}/NativeMessagingHosts"
+        mkdir -p "${NATIVE_DIR}"
+        if [[ ! -f "${NATIVE_DIR}/com.anthropic.claude_code_browser_extension.json" ]]; then
+            cat << EOF > "${NATIVE_DIR}/com.anthropic.claude_code_browser_extension.json"
+{
+  "name": "com.anthropic.claude_code_browser_extension",
+  "description": "Claude Code Browser Extension Native Host",
+  "path": "${CLAUDE_WRAPPER_DIR}/chrome-native-host",
+  "type": "stdio",
+  "allowed_origins": [
+    "chrome-extension://fcoeoabgfenejglbffodgkkbkcdhcgfn/"
+  ]
+}
+EOF
+            success "Manifest de Native Messaging instalado em ${NATIVE_DIR}."
+        fi
+    fi
+done
+
 if command -v uv &> /dev/null; then
     if ! uv tool list | grep -q "browser-use" 2>/dev/null; then
         info "Instalando browser-use via uv..."
@@ -80,6 +114,24 @@ if command -v uv &> /dev/null; then
     fi
 else
     warn "'uv' não encontrado. Recomenda-se instalar uv para gerenciar ferramentas agênticas python."
+fi
+
+# 5. Validação de Binários e Chaves
+echo "------------------------------------------------------"
+info "Auditando ambiente do Antigravity CLI..."
+
+if ! command -v agy &> /dev/null; then
+    warn "Binário 'agy' não detectado no PATH."
+    echo "  -> Se instalado em ~/.local/bin/agy, adicione 'export PATH=\"\$HOME/.local/bin:\$PATH\"' ao ~/.bashrc"
+else
+    success "Antigravity CLI detectado: $(agy --version 2>/dev/null || echo 'versão OK')"
+fi
+
+if [[ -z "${GEMINI_API_KEY:-}" ]] && ! grep -q "GEMINI_API_KEY" "${HOME}/.secrets" 2>/dev/null && ! grep -q "GEMINI_API_KEY" "${HOME}/.gemini/.env" 2>/dev/null; then
+    warn "GEMINI_API_KEY não localizada em ~/.secrets ou ~/.gemini/.env."
+    echo "  -> Para configurar: echo 'export GEMINI_API_KEY=\"sua-chave\"' >> ~/.secrets"
+else
+    success "Credencial GEMINI_API_KEY verificada."
 fi
 
 echo "------------------------------------------------------"

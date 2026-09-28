@@ -380,5 +380,83 @@ Graças à padronização do protocolo aberto **Model Context Protocol (MCP)**, 
 2. **Independência de Cotas da Anthropic**: O raciocínio agêntico, planejamento de passos e geração de seletores são feitos pelos modelos Gemini do AGY. Usando as ferramentas de manipulação direta (`javascript_tool`, `get_page_text`, `navigate`, `computer`), o AGY não consome limites de tokens semanais da Anthropic.
 3. **Preferência de Navegação Padronizada**: O AGY tem como regra de ouro operar na sessão do navegador apontada pelo usuário, eliminando a fricção de reautenticações diárias.
 
+---
+
+## 12. Guia de Migração: Configurando uma Máquina Nova (Partindo apenas do Claude Code)
+
+Se você tem uma máquina que possui apenas o Claude Code (`claude`) e a extensão Claude in Chrome instalada no Brave/Chrome, o setup completo do Antigravity CLI com navegador autenticado é feito em menos de 5 minutos seguindo o checklist abaixo:
+
+### 12.1. O que a Máquina já Possui vs. O que Falta
+
+| Componente | Estado na Máquina de Origem | O que precisa ser feito |
+| :--- | :--- | :--- |
+| **Node.js & npm** | Já instalado | Nenhuma ação necessária |
+| **Claude Code (`claude`)** | Já instalado | Usado pelo AGY como servidor MCP stdio |
+| **Brave / Chrome com Extensão** | Já instalado e logado | Conectado automaticamente pelo script |
+| **Binário do `agy`** | **Faltando** | Baixar/copiar para `~/.local/bin/agy` |
+| **`GEMINI_API_KEY`** | **Faltando** | Adicionar ao `~/.secrets` |
+| **Configs & MCPs do AGY** | **Faltando** | Provisionado pelo `bootstrap-antigravity.sh` |
+
+---
+
+### 12.2. Passo a Passo "Zero to Ready" (Execução Prática)
+
+#### Passo 1: Instalar o Binário do Antigravity (`agy`)
+Certifique-se de que o diretório `~/.local/bin` existe e está no seu `$PATH` no `~/.bashrc`:
+```bash
+mkdir -p ~/.local/bin
+export PATH="$HOME/.local/bin:$PATH"
+```
+Coloque o executável `agy` em `~/.local/bin/agy` e dê permissão de execução:
+```bash
+chmod +x ~/.local/bin/agy
+agy --version
+```
+
+#### Passo 2: Configurar a Credencial da API Gemini
+No arquivo `~/.secrets` (protegido com `chmod 600`):
+```bash
+echo 'export GEMINI_API_KEY="AIzaSy..."' >> ~/.secrets
+chmod 600 ~/.secrets
+source ~/.bashrc
+```
+
+#### Passo 3: Clonar o Repositório e Executar o Bootstrap
+```bash
+git clone https://github.com/maxh33/pop-os-oled-setup.git
+cd pop-os-oled-setup
+./scripts/bootstrap-antigravity.sh
+```
+
+**O script executa automaticamente tudo o que é necessário:**
+- ✅ Cria `~/.gemini/antigravity-cli/` e `~/.gemini/config/`.
+- ✅ Instala `settings.json`, `GEMINI.md` e o symlink `AGENTS.md`.
+- ✅ Configura `mcp_config.json` com `claude-in-chrome`, `github`, `context7` e `playwright`.
+- ✅ Cria o script wrapper `~/.claude/chrome/chrome-native-host` e o manifest de Native Messaging no Brave/Chrome.
+- ✅ Configura o lançador do Brave com `--remote-debugging-port=9222`.
+- ✅ Instala o `browser-use` via `uv tool`.
+- ✅ Valida o binário `agy` e a chave `GEMINI_API_KEY`.
+
+---
+
+### 12.3. Smoke Tests (Validação Imediata)
+
+1. **Validar Servidores MCP**:
+   ```bash
+   agy mcp list
+   ```
+   *Saída esperada: `claude-in-chrome`, `context7`, `github`, `playwright` todos como `enabled`.*
+
+2. **Testar Automação na Janela Real**:
+   Abra o Antigravity:
+   ```bash
+   agy
+   ```
+   E solicite uma ação no navegador com sua sessão existente:
+   > *"Verifique quais abas estão abertas no meu Brave e leia o título da aba ativa."*
+   
+   O AGY se conectará à sua extensão nativa sem abrir instâncias virgens, com todas as suas contas, cookies e extensões perfeitamente operacionais!
+
+
 
 
