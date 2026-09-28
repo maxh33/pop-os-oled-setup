@@ -285,3 +285,33 @@ Em conformidade com a regra de segurança do ambiente (**zero credenciais hardco
 
 - **`gemini` MCP**: Usado no Claude Code para economizar contexto do Sonnet delegando código longo. **Desnecessário no AGY**, pois o próprio AGY é executado diretamente sobre modelos Gemini 3.8 com janela nativa de 1 milhão de tokens.
 - **`desktop-commander`**: Usado no Claude Desktop para contornar restrições de sandbox. **Redundante no AGY**, que já dispõe de terminal Bash completo (`run_command`), PTY interativo e controle de processos de fundo (`manage_task`).
+
+---
+
+## 10. Bootstrap em Novas Máquinas (Linux & Windows)
+
+Se você estiver configurando uma nova máquina do zero com uma instalação nova do `agy`, basta clonar este repositório e executar o script de automação correspondente ao seu sistema operacional:
+
+### 10.1. Linux / WSL2 / Pop!_OS
+```bash
+git clone https://github.com/maxh33/pop-os-oled-setup.git
+cd pop-os-oled-setup
+./scripts/bootstrap-antigravity.sh
+```
+
+O script realiza:
+1. Criação dos diretórios `~/.gemini/antigravity-cli` e `~/.gemini/config`.
+2. Cópia do `settings.json`, `GEMINI.md`, `mcp_config.json` e symlink `AGENTS.md`.
+3. Injeção de export dinâmico de `GITHUB_PERSONAL_ACCESS_TOKEN` via `gh` no `~/.bashrc`.
+4. Symlink de compatibilidade `~/.config/google-chrome` -> `BraveSoftware/Brave-Browser` para automações agênticas.
+5. Instalação / verificação de `browser-use` via `uv`.
+
+### 10.2. Windows (PowerShell)
+```powershell
+git clone https://github.com/maxh33/pop-os-oled-setup.git
+cd pop-os-oled-setup
+.\scripts\bootstrap-antigravity.ps1
+```
+
+O script realiza a criação das pastas equivalentes em `$env:USERPROFILE\.gemini`, copia as configurações centrais e valida as dependências do ambiente Windows.
+
