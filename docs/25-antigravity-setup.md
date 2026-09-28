@@ -127,6 +127,7 @@ O AGY herda as mesmas regras inegociáveis do ambiente:
 Cópias das configurações estão armazenadas neste repositório em:
 - `configs/antigravity/GEMINI.md`: Espelho das instruções globais em `~/.gemini/config/GEMINI.md`.
 - `configs/antigravity/settings.json`: Espelho de `~/.gemini/antigravity-cli/settings.json`.
+- `configs/antigravity/mcp_config.json`: Espelho de `~/.gemini/config/mcp_config.json`.
 
 ---
 
@@ -230,3 +231,57 @@ async def main():
 
 asyncio.run(main())
 ```
+
+---
+
+## 9. Model Context Protocol (MCP) no Antigravity
+
+O Antigravity suporta o padrão **Model Context Protocol (MCP)** para estender suas ferramentas nativas com servidores locais (stdio) ou remotos (http/SSE).
+
+### 9.1. Comandos de Gerenciamento CLI (`agy mcp`)
+
+```bash
+# Listar todos os servidores configurados
+agy mcp list
+
+# Adicionar um servidor MCP via stdio
+agy mcp add <nome> <comando> [argumentos...]
+
+# Adicionar com variáveis de ambiente
+agy mcp add --env KEY=value <nome> <comando> [argumentos...]
+
+# Habilitar / Desabilitar temporariamente
+agy mcp disable <nome>
+agy mcp enable <nome>
+
+# Remover um servidor
+agy mcp remove <nome>
+```
+
+### 9.2. Servidores Configurados no Ambiente
+
+As configurações globais ficam salvas em `~/.gemini/config/mcp_config.json` (com backup neste repositório em `configs/antigravity/mcp_config.json`).
+
+| Servidor MCP | Pacote / Comando | Finalidade Principal |
+| :--- | :--- | :--- |
+| **`context7`** | `npx -y @upstash/context7-mcp` | Documentações oficiais de APIs e frameworks em tempo real, sem alucinações. |
+| **`github`** | `npx -y @modelcontextprotocol/server-github` | Consulta e gerenciamento de repositórios, PRs, issues e branches via GitHub API. |
+| **`playwright`** | `npx -y @playwright/mcp` | Automação e testes de navegador via seletores CSS/DOM e snapshots estruturados. |
+
+### 9.3. Segurança & Gestão de Segredos no MCP
+
+Em conformidade com a regra de segurança do ambiente (**zero credenciais hardcoded**):
+- O servidor `github` consome `${GITHUB_PERSONAL_ACCESS_TOKEN}`.
+- O token é exportado dinamicamente no `~/.bashrc` via GitHub CLI:
+  ```bash
+  if command -v gh &> /dev/null; then
+      export GITHUB_PERSONAL_ACCESS_TOKEN="$(gh auth token 2>/dev/null)"
+      export GITHUB_TOKEN="$GITHUB_PERSONAL_ACCESS_TOKEN"
+  fi
+  ```
+  Isso garante que nenhum token fique exposto em arquivos de configuração ou versionado no Git.
+
+### 9.4. Comparativo com o Setup do Claude Code
+
+- **`gemini` MCP**: Usado no Claude Code para economizar contexto do Sonnet delegando código longo. **Desnecessário no AGY**, pois o próprio AGY é executado diretamente sobre modelos Gemini 3.8 com janela nativa de 1 milhão de tokens.
+- **`desktop-commander`**: Usado no Claude Desktop para contornar restrições de sandbox. **Redundante no AGY**, que já dispõe de terminal Bash completo (`run_command`), PTY interativo e controle de processos de fundo (`manage_task`).
