@@ -267,6 +267,7 @@ As configurações globais ficam salvas em `~/.gemini/config/mcp_config.json` (c
 | **`context7`** | `npx -y @upstash/context7-mcp` | Documentações oficiais de APIs e frameworks em tempo real, sem alucinações. |
 | **`github`** | `npx -y @modelcontextprotocol/server-github` | Consulta e gerenciamento de repositórios, PRs, issues e branches via GitHub API. |
 | **`playwright`** | `npx -y @playwright/mcp` | Automação e testes de navegador via seletores CSS/DOM e snapshots estruturados. |
+| **`claude-in-chrome`** | `claude --claude-in-chrome-mcp` | Bridge nativa com a extensão do Brave/Chrome. Permite ao AGY controlar abas da janela ativa sem abrir perfis virgens. |
 
 ### 9.3. Segurança & Gestão de Segredos no MCP
 
@@ -351,5 +352,33 @@ Para permitir que ferramentas agênticas baseadas em CDP (Playwright, browser-us
    Exec=/usr/bin/brave-browser-stable --remote-debugging-port=9222 %U
    ```
 3. Ao iniciar o Brave diariamente pelo dock/menu do Pop!_OS, o navegador real sempre escutará na porta `9222`. Qualquer ferramenta pode se acoplar a ele via `http://localhost:9222` de forma transparente.
+
+### 11.4. Interoperabilidade Cruzada: AGY Controlando o Claude in Chrome
+
+Graças à padronização do protocolo aberto **Model Context Protocol (MCP)**, o Antigravity (`agy`) é capaz de consumir servidores de ferramentas concebidos por qualquer ecossistema:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                 Antigravity CLI (agy)                       │
+│             Modelo: Gemini 3.8 (1M tokens)                  │
+└──────────────────────────┬──────────────────────────────────┘
+                           │ Protocolo MCP (stdio JSON-RPC)
+┌──────────────────────────▼──────────────────────────────────┐
+│              claude --claude-in-chrome-mcp                  │
+└──────────────────────────┬──────────────────────────────────┘
+                           │ Native Messaging Host (stdio)
+┌──────────────────────────▼──────────────────────────────────┐
+│   Extensão do Brave/Chrome (Claude in Chrome / ID fcoe...)   │
+│             Janela Real do Usuário (PID Ativo)              │
+│       • Todas as Extensões Ativas (1Password, Dark Reader)   │
+│       • Todos os Logins Preservados (WhatsApp, SSO, Contas) │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### Vantagens Estratégicas:
+1. **Reaproveitamento de Infraestrutura Pronta**: Você não precisa reinstalar extensões ou reautenticar nenhuma sessão. O AGY herda instantaneamente toda a bridge que já estava configurada para o Claude Code.
+2. **Independência de Cotas da Anthropic**: O raciocínio agêntico, planejamento de passos e geração de seletores são feitos pelos modelos Gemini do AGY. Usando as ferramentas de manipulação direta (`javascript_tool`, `get_page_text`, `navigate`, `computer`), o AGY não consome limites de tokens semanais da Anthropic.
+3. **Preferência de Navegação Padronizada**: O AGY tem como regra de ouro operar na sessão do navegador apontada pelo usuário, eliminando a fricção de reautenticações diárias.
+
 
 

@@ -49,7 +49,7 @@ This is a non-negotiable security requirement for ALL projects.
 
 ### gemini-git-helper.sh
 
-**Location:** `/home/notexam/bin/gemini-git-helper.sh`  
+**Location:** `/home/max/bin/gemini-git-helper.sh`  
 **Usage:** Run `gemini-git-helper.sh` in any git repository
 
 AI-powered git commit assistant that:
@@ -90,8 +90,8 @@ gemini-git-helper.sh -s --since main          # Scan since main branch
 
 #### Global Pre-Commit and Pre-Push Hooks
 
-**Hooks Location:** `/home/notexam/bin/git-hooks/`  
-**Enabled via:** `git config --global core.hooksPath /home/notexam/bin/git-hooks/`
+**Hooks Location:** `/home/max/bin/git-hooks/`  
+**Enabled via:** `git config --global core.hooksPath /home/max/bin/git-hooks/`
 
 The hooks:
 - **pre-commit**: Blocks commits containing secrets (API keys, tokens, passwords)
@@ -117,9 +117,11 @@ The hooks:
 ### Directory Structure
 
 ```
-/home/notexam/Repositorios/          # Main repositories
-/home/notexam/bin/                   # Custom scripts and utilities
-/home/notexam/bin/git-hooks/         # Global git hooks
+/mnt/storage/Programacao/Repositorios/          # Main repositories
+/mnt/onedrive_storage/Programacao/Repositorios/ # Cloud-synced repositories
+/home/max/projects/                             # Local projects
+/home/max/bin/                                  # Custom scripts and utilities
+/home/max/bin/git-hooks/                        # Global git hooks
 ```
 
 ### Bash Enhancements
@@ -346,6 +348,23 @@ Configured global git aliases for faster workflow:
 
 ---
 
+## Automação Agêntica de Navegador (Browser Session Policy)
+
+### 🌐 Conexão Obrigatória com a Sessão Real do Usuário (Anti-Perfil Virgem)
+
+Ao realizar qualquer tarefa de automação de navegador (inspeção de páginas, navegação agêntica, leitura de mensagens autenticadas, portais com SSO):
+1. **SEMPRE priorizar a conexão com a sessão real do navegador indicada pelo usuário**:
+   - Via MCP `claude-in-chrome` (bridge direto com a extensão ativa no Brave/Chrome principal).
+   - Ou via CDP (`--remote-debugging-port=9222`) conectado ao processo real do navegador.
+2. **NUNCA clonar perfis para `/tmp` nem criar instâncias virgens**:
+   - Clonar pastas de perfil quebra a assinatura HMAC de segurança do Chromium (`Secure Preferences`), desabilitando silenciosamente todas as extensões do usuário (1Password, Dark Reader, adblockers).
+   - Sessões virgens exigem reautenticação manual desnecessária e escaneamento de QR Code (ex: WhatsApp Web).
+3. **Execução Local via MCP `claude-in-chrome`**:
+   - Priorizar ferramentas de execução direta no DOM (`javascript_tool`, `get_page_text`, `navigate`, `tabs_context_mcp`, `browser_batch`).
+   - Evitar ferramentas que invoquem APIs externas da Anthropic (como `find`), garantindo zero consumo de limites semanais e controle 100% autônomo pelo Antigravity / Gemini.
+
+---
+
 ## This Applies to ALL Projects
 
 **No exceptions:**
@@ -360,3 +379,4 @@ Configured global git aliases for faster workflow:
 - Infrastructure as Code (Terraform, CloudFormation, etc.)
 
 **NEVER hardcode credentials. ALWAYS use environment variables.**
+
