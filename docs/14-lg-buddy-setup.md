@@ -120,6 +120,45 @@ journalctl --user -u LG_Buddy_screen.service -f
 swayidle -w timeout 10 'echo IDLE' resume 'echo RESUMED'
 ```
 
+## Known Issues & Firmware Compatibility
+
+### LG webOS Firmware Update (Blacklisted Certificate / 401 & 403 Errors)
+
+In mid-2026, LG pushed firmware updates to webOS TVs that blacklisted the legacy RSA test certificate and signed manifest (`com.lge.test`) embedded by default in older versions of `bscpylgtv` (e.g. 0.5.0).
+
+#### Symptoms
+- The TV rejects pairing or authentication during the WebSocket handshake:
+  ```json
+  {"type":"error","id":"register_0","error":"403 Pairing rejected: blacklisted certificate detected"}
+  ```
+- All subsequent commands fail with:
+  ```text
+  bscpylgtv.exceptions.PyLGTVCmdError: {'type': 'error', 'id': 0, 'error': '401 insufficient permissions (not registered)'}
+  ```
+- **Real-world consequence:** `LG_Buddy_Screen_Off` fails silently on idle. The PC suspends video output (DPMS off), but the TV stays powered on without signal and eventually triggers its native OLED screensaver (fireworks / gallery / clock).
+
+#### Solution (Unsigned / Compatibility Manifest)
+1. Use `bscpylgtv` >= 0.5.4.
+2. Strip the `signatures` and `signed` blocks from the registration manifest (or use `-m manifest-comp.json`), keeping standard unprivileged permissions (`CONTROL_POWER`, `CONTROL_TV_SCREEN`, `READ_RUNNING_APPS`, `READ_INPUT_DEVICE_LIST`, etc.).
+3. The TV accepts the existing client pairing key immediately without prompts, restoring full control of `power_off`, `get_input`, and `set_input`.
+
+#### User-Space Architecture (Rootless Screen Monitor)
+To avoid modifying `/usr/bin/` and keep the desktop screen monitor self-contained:
+1. Virtual environment in `~/.local/share/lg-buddy-venv`:
+   ```bash
+   uv venv ~/.local/share/lg-buddy-venv
+   uv pip install --python ~/.local/share/lg-buddy-venv/bin/python bscpylgtv==0.5.4
+   ```
+2. Strip signatures in `~/.local/share/lg-buddy-venv/lib/python3.12/site-packages/bscpylgtv/manifest.py`.
+3. User scripts in `~/.local/bin/` (`LG_Buddy_Screen_Monitor`, `LG_Buddy_Screen_Off`, `LG_Buddy_Screen_On`).
+4. User systemd service in `~/.config/systemd/user/LG_Buddy_screen.service` pointing to `~/.local/bin/LG_Buddy_Screen_Monitor`.
+
+### Dynamic Idle Timeout on COSMIC Desktop
+
+Rather than hardcoding `IDLE_TIMEOUT=300`, `LG_Buddy_Screen_Monitor` can detect the configured screen blank time dynamically from:
+`~/.config/cosmic/com.system76.CosmicIdle/v1/screen_off_time` (value in ms, e.g. `Some(600000)` = 600s). This keeps TV power-off in exact sync with the desktop display sleep.
+
 ## Reference Configs
 
 Configs saved in `configs/lg-buddy/` use placeholder values (`192.168.X.X`, `XX:XX:XX:XX:XX:XX`). Run `configure.sh` or manually edit after copying.
+

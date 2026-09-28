@@ -7,7 +7,16 @@
 # IMPORTANT: Set IDLE_TIMEOUT to match your COSMIC screen blank setting.
 # Default COSMIC setting is 120 seconds (2 minutes).
 
-IDLE_TIMEOUT=300
+# Detect idle timeout dynamically from COSMIC screen blank settings, fallback to 300s
+COSMIC_IDLE_FILE="$HOME/.config/cosmic/com.system76.CosmicIdle/v1/screen_off_time"
+if [ -f "$COSMIC_IDLE_FILE" ]; then
+    ms=$(grep -oP '\d+' "$COSMIC_IDLE_FILE" 2>/dev/null)
+    if [ -n "$ms" ] && [ "$ms" -gt 0 ]; then
+        IDLE_TIMEOUT=$(( ms / 1000 ))
+    fi
+fi
+
+IDLE_TIMEOUT="${IDLE_TIMEOUT:-300}"
 
 echo "Starting LG Buddy Screen Monitor using swayidle (timeout: ${IDLE_TIMEOUT}s)..."
 
