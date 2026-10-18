@@ -64,6 +64,7 @@ paplay /usr/share/sounds/freedesktop/stereo/complete.oga
 | [23-wakapi-selfhost-cloudflare-tunnel.md](docs/23-wakapi-selfhost-cloudflare-tunnel.md) | Self-hosted Wakapi on Oracle ARM VPS via Cloudflare Tunnel, cert-based auth (no API token) |
 | [24-lgtv-companion-windows-issue.md](docs/24-lgtv-companion-windows-issue.md) | LGTV Companion (Windows dual-boot counterpart to LG Buddy) — idle-blank screen-wake failure, workaround, open investigation |
 | [25-antigravity-setup.md](docs/25-antigravity-setup.md) | Google Antigravity (AGY) CLI setup, rules & architecture |
+| [28-whatsapp-business-tools-mcp.md](docs/28-whatsapp-business-tools-mcp.md) | Meta WhatsApp Business Tools MCP (oficial): instalação no Claude Code, OAuth, pré-requisitos, fluxo de número novo, cuidados |
 
 ## Key Fix Summary
 
