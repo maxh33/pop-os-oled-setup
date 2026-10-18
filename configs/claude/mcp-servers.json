@@ -55,6 +55,10 @@
       "env": {
         "GEMINI_API_KEY": "${GEMINI_API_KEY}"
       }
+    },
+    "whatsapp_business_tools": {
+      "type": "http",
+      "url": "https://mcp.facebook.com/whatsapp_business_tools"
     }
   }
 }
