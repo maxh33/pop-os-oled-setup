@@ -1,0 +1,4 @@
+# zoxide (cd inteligente: `z cruzeiro sul`, `zi` para escolher com fzf)
+# Add this to ~/.bashrc BEFORE ble-attach (e depois do wakatime).
+# Se ficar depois do ble-attach, o hook nunca grava e o banco fica vazio.
+eval "$(zoxide init bash)"
