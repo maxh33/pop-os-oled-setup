@@ -1,0 +1,6 @@
+[Unit]
+Description=Limpa logs gigantes do OneDriveGUI em /tmp
+
+[Service]
+Type=oneshot
+ExecStart=%h/.local/bin/onedrive-gui-log-cleanup.sh
