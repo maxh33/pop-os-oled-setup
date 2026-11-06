@@ -951,3 +951,5 @@ All 16 plan files (416KB) have been **copied to**: `odoo-ecommerce/docs/plans/`
 
 - **Linux key** (`~/.secrets`): Active, used by gemini-git-helper.sh
 - **Windows key**: Different key, exposed in Windows Claude Code config — should be revoked at Google AI Studio when convenient
+
+> Padrões de engenharia sênior: ver `rules/senior-engineering.md` (no sistema vivo é importado via `@rules/senior-engineering.md` em `~/.claude/CLAUDE.md`; deploy copia para `~/.claude/rules/`).
