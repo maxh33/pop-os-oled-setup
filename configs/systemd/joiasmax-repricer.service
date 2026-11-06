@@ -6,3 +6,4 @@ After=docker.service
 Type=oneshot
 WorkingDirectory=/mnt/storage/Programacao/Repositorios/joiasmax-ecommerce
 ExecStart=/mnt/storage/Programacao/Repositorios/joiasmax-ecommerce/local-dev/repricer-daily-test.sh
+TimeoutStartSec=30min

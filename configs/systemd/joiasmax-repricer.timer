@@ -1,8 +1,15 @@
 [Unit]
-Description=JoiasMax — dispara o repricer diario as 09:00
+Description=JoiasMax — dispara o repricer em dia util as 09:00
 
 [Timer]
-OnCalendar=*-*-* 09:00:00
+# Mon..Fri de proposito: o mercado de ouro (XAU spot) so negocia ~dom 18h ET ->
+# sex 17h ET. Rodando sabado/domingo a fonte devolve o fechamento de sexta
+# congelado, e duas leituras identicas "confirmariam" um retido contando o mesmo
+# numero duas vezes (o guardrail de 2 leituras independentes evaporaria).
+# 09:00 BRT = 12:00 Londres / 08:00 NY: pregao aberto e liquido.
+# Tambem torna verdadeira a premissa que _business_days_after() ja documenta
+# em wc-repricer.py ("o cron roda so dias uteis 1-5").
+OnCalendar=Mon..Fri 09:00:00
 Persistent=true
 AccuracySec=5min
 
