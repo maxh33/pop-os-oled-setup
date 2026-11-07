@@ -173,3 +173,28 @@ To ensure 100% reliable wake-up:
 Configs saved in `configs/lg-buddy/` use placeholder values (`192.168.X.X`, `XX:XX:XX:XX:XX:XX`). Run `configure.sh` or manually edit after copying.
 
 
+
+### TV Signal Recovery After Wake (tv-wake-recover)
+
+Even with the WOL burst and retry loop, the LG B3 sometimes stays on "no signal" after the PC wakes: the NVIDIA DisplayPort-to-HDMI link does not renegotiate and the DRM connector (`DP-3`) comes back late or not at all. `tv-wake-recover` covers that case.
+
+- `configs/lg-buddy/bin/tv-wake-recover.sh` waits 6 s (so `LG_Buddy_Screen_On` finishes first), then waits up to 20 s for `/sys/class/drm/card0-DP-3/status` to read `connected`.
+  - Still disconnected: sends WOL if the TV does not ping, then bounces the TV input (`HDMI_2` then back to the PC input) through `bscpylgtvcommand`.
+  - Came back late (or `--force`): `cosmic-randr disable/enable DP-3`, then the input bounce.
+  - Connected normally: does nothing.
+- `configs/lg-buddy/systemd/tv-wake-recover.service` runs `swayidle -w timeout 280 true resume tv-wake-recover.sh`. `resume` only fires after an idle period, so 280 s sits before the 300 s Screen Monitor timeout.
+- Log: `~/.local/state/tv-wake-recover.log`. `DRY_RUN=1 tv-wake-recover.sh` only prints what it would do.
+- Edit `TV_IP`, `TV_MAC`, `PC_INPUT`, `OTHER_INPUT` and `OUTPUT` at the top of the script after copying; the repo copy has placeholders.
+
+#### Surviving reboots
+
+The unit uses `WantedBy=default.target`, `After=graphical-session.target`, `Restart=always` and `RestartSec=10`, the same wiring as `LG_Buddy_screen.service`, which is known to start on every login. An earlier draft used `WantedBy=graphical-session.target` with `PartOf`; it was never enabled and did not run. Install:
+
+```bash
+cp configs/lg-buddy/bin/tv-wake-recover.sh ~/.local/bin/ && chmod +x ~/.local/bin/tv-wake-recover.sh
+cp configs/lg-buddy/systemd/tv-wake-recover.service ~/.config/systemd/user/
+systemctl --user daemon-reload
+systemctl --user enable --now tv-wake-recover.service
+```
+
+Check after every reboot: `systemctl --user is-enabled tv-wake-recover.service` must print `enabled` and `is-active` must print `active`.

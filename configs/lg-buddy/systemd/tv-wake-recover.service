@@ -1,0 +1,12 @@
+[Unit]
+Description=Recupera sinal da TV LG apos acordar (swayidle resume)
+After=graphical-session.target
+
+[Service]
+# resume só dispara depois de um idle: 280s fica antes dos 300s do LG_Buddy_Screen_Monitor
+ExecStart=/usr/bin/swayidle -w timeout 280 true resume '%h/.local/bin/tv-wake-recover.sh'
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=default.target
