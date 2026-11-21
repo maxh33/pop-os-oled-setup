@@ -406,3 +406,5 @@ xxd
 zlib1g
 gamemode
 steam
+openssh-server
+tailscale
