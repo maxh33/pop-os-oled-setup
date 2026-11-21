@@ -66,6 +66,7 @@ paplay /usr/share/sounds/freedesktop/stereo/complete.oga
 | [25-antigravity-setup.md](docs/25-antigravity-setup.md) | Google Antigravity (AGY) CLI setup, rules & architecture |
 | [28-whatsapp-business-tools-mcp.md](docs/28-whatsapp-business-tools-mcp.md) | Meta WhatsApp Business Tools MCP (oficial): instalação no Claude Code, OAuth, pré-requisitos, fluxo de número novo, cuidados |
 | [29-youtube-transcript-skill.md](docs/29-youtube-transcript-skill.md) | Skill global youtube-transcript: legendas via yt-dlp (sem navegador), Chrome como plano B, causa da falha por janela oculta |
+| [34-remote-access-ssh-tailscale-rustdesk.md](docs/34-remote-access-ssh-tailscale-rustdesk.md) | Acesso remoto sem supervisão: SSH + Tailscale, RustDesk no Wayland (portal), energia COSMIC |
 
 ## Key Fix Summary
 
