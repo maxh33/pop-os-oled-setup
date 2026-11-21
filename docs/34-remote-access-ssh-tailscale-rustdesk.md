@@ -28,7 +28,7 @@ Teste a chave a partir do cliente. Só então aplique `configs/ssh/50-hardening.
 sudo cp configs/ssh/50-hardening.conf /etc/ssh/sshd_config.d/ && sudo sshd -t && sudo systemctl reload ssh
 ```
 
-`ufw` estava inativo. Se ativar: `sudo ufw allow from 192.168.0.0/24 to any port 22` (nunca expor a 22 na internet).
+`ufw` estava inativo. Se ativar: `sudo ufw allow from <LAN_CIDR> to any port 22` (nunca expor a 22 na internet).
 
 ## Tailscale (acesso fora da LAN)
 

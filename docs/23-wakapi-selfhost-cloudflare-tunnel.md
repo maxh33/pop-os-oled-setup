@@ -19,8 +19,8 @@ Two VPS available, picked by checking actual load first, not by assumption:
 
 | VPS | Role | Why not / why chosen |
 |-----|------|----------------------|
-| netcup (`152.53.194.138`, amd64) | Busy: my-portfolio, Traefik, Prometheus/Grafana/Loki stack, Postgres, n8n | Skipped — 4.8/7.8GB RAM used, ports 80/443/8080 already owned by Traefik |
-| Oracle ARM (`147.15.32.83`, aarch64, ssh alias `OracleArm`) | Nearly idle, only unrelated OpenVPN container | **Chosen** — 11GB RAM free, no port conflict, no reverse proxy yet. `ghcr.io/muety/wakapi` confirmed multi-arch (arm64 manifest present) |
+| netcup (`<NETCUP_IP>`, amd64) | Busy: my-portfolio, Traefik, Prometheus/Grafana/Loki stack, Postgres, n8n | Skipped — 4.8/7.8GB RAM used, ports 80/443/8080 already owned by Traefik |
+| Oracle ARM (`<ORACLE_IP>`, aarch64, ssh alias `OracleArm`) | Nearly idle, only unrelated OpenVPN container | **Chosen** — 11GB RAM free, no port conflict, no reverse proxy yet. `ghcr.io/muety/wakapi` confirmed multi-arch (arm64 manifest present) |
 
 ## Why cert-based Tunnel auth, not an API token
 

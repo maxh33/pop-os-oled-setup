@@ -57,7 +57,7 @@ Edit the variables at the top of each script in `bin/` (or use `configure.sh`):
 
 | Variable | Example | Used In |
 |----------|---------|---------|
-| `tv_ip` | `192.168.0.155` | All scripts |
+| `tv_ip` | `<TV_IP>` | All scripts |
 | `tv_mac` | `84:90:0A:64:10:68` | Screen_On, Startup |
 | `input` | `HDMI_4` | All scripts |
 
