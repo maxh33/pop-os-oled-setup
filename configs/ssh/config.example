@@ -38,3 +38,11 @@ Host github.com
     HostName github.com
     User git
     IdentityFile ~/.ssh/id_ed25519
+
+# Pop!_OS desktop reached over Tailscale (MagicDNS name or 100.x address).
+# Used from another machine (e.g. WSL laptop). See docs/34-remote-access-ssh-tailscale-rustdesk.md.
+Host popos
+    HostName pop-os
+    User your_username
+    IdentityFile ~/.ssh/id_ed25519
+    IdentitiesOnly yes
