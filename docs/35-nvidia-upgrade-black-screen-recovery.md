@@ -108,6 +108,8 @@ X570M Pro4 (BIOS P5.60, 19/01/2024), Ryzen 9 5900X, 4 x 32 GB de RAM (128 GB), A
 | OBS + Whisper com a A2000 sem monitor (dongle) e a **RX 6400** como GPU de vídeo | caiu ~1 a 30 s depois do `Loading whisper model ... CUDA0` |
 | OBS + Whisper, A2000 a 26 W / 20 % de uso | caiu ~60 s depois de carregar o modelo (**o menor consumo de todas as quedas**) |
 | **CPU + RAM sem GPU**: 24 threads, 70 GB verificados, 10 min | **passou**: 0 erros de RAM, Tctl máx. 62,5 °C |
+| Abrir o navegador (Brave, usa GPU) com a A2000 instalada | reiniciou o PC várias vezes (relato do dono) |
+| **A2000 removida**, só a RX 6400, com garimpador, Brave e scanners rodando | **estável por mais de 8 h** (um único boot, CPU 45 a 65 °C) |
 
 ### O que ficou descartado
 
@@ -135,6 +137,47 @@ Versão do driver (580 e 595), kernel (7.1.5 e 7.2.15), velocidade do link (Gen2
    não imprime nada, então a evidência só existe no boot seguinte (BERT/MCA).
 
 Enquanto isso, a transcrição de aulas deve rodar **sem CUDA** (CPU ou outro backend) ou em outra máquina.
+
+### Atualização 24/11/2026: o gatilho é a A2000, não a plataforma
+
+- Com a **A2000 fora do PC** (só a RX 6400, via HDMI), o Pop ficou **mais de 8 h estável** com carga real e contínua
+  (Brave em GPU, 24 threads de CPU nos testes, scanners e crons). A queda não aparece sem a A2000 instalada.
+- O dono relatou que o mesmo comportamento já ocorreu com a **RTX 3070** na mesma placa-mãe. As duas são NVIDIA
+  (CUDA), então o que se repete é **GPU NVIDIA com contexto CUDA/driver ativo**, e não uma placa específica.
+- Com a RX 6400 como GPU de vídeo e a A2000 só com o dongle (ainda uma saída ativa para o compositor), iniciar a
+  transcrição no CUDA da A2000 derrubou o PC **no instante do `Loading whisper model ... CUDA0`** (o journal termina 1 s
+  depois; o journal em disco perde ~30 s, então a queda real foi até ~30 s depois).
+- A queda de menor consumo registrada foi com a GPU a **26 W e 20 % de uso**: potência, temperatura e throttle estão
+  descartados como gatilho.
+
+### Pistas da comunidade (nenhum relato idêntico)
+
+- Reset de **host inteiro**, silencioso (sem panic, Xid, oops nem `pstore`), com módulo **open** e drivers **580, 595 e 610**
+  numa RTX 4090 (gatilho: NVENC). É o caso mais parecido; o autor aponta uma falha abaixo do nível que o kernel trata.
+- Problemas no **Pop!_OS/COSMIC com os módulos open** (`nvidia`, `nvidia_modeset`, `nvidia_drm`, `nvidia_uvm`) carregados;
+  o `nvidia_drm` fica preso ao compositor e não descarrega.
+- Travamentos de `nvidia-modeset` em compositores Wayland nas séries 580 e 595, ligados a monitor externo e a mudança de
+  saída de vídeo. Parâmetros citados: `nvidia-drm.fbdev=0` e desligar o ASPM do PCIe (o PC já usa `pcie_port_pm=off`).
+
+### Roteiro de testes de software (só com a A2000 reinstalada)
+
+1. **Sem sessão gráfica**: como root, `systemctl isolate multi-user.target` (derruba o COSMIC) e rodar a carga de CUDA por
+   SSH. Se reiniciar mesmo assim, **não é Wayland nem compositor**. Se não reiniciar, o gatilho é CUDA + compositor.
+2. **Módulo proprietário em vez do open**: trocar `nvidia-driver-595-open` por `nvidia-driver-595` (a A2000, Ampere,
+   suporta os dois). Os relatos pedem exatamente essa comparação.
+3. `nvidia-drm.fbdev=0` e `nvidia-drm.modeset=0` na linha do kernel (`kernelstub`).
+4. Se nada disso mudar: A2000 e 3070 em outra máquina, e revisão do BIOS (padrões, EXPO desligado, IOMMU, Above 4G,
+   ReBAR). Com 4 pentes de 32 GB, depois de mexer no BIOS o primeiro boot demora minutos com tela preta; a placa-mãe
+   mostra códigos alternando no display de debug (treinamento de memória): esperar 3 a 5 min.
+
+### Ferramentas usadas (em `~/gpu-stress/` no Pop, fora do repo)
+
+- `burn.cu` (compilado com `nvcc -arch=sm_86 -allow-unsupported-compiler`): kernel FMA em fases, com checagem de
+  divergência; `ramp.sh` roda 6 etapas de 8 a 4096 blocos.
+- `mon.py`: grava com `fsync` a cada 0,5 s temperatura, potência, clocks, estado do link PCIe e motivos de throttle.
+- `memburn.c` (`gcc -pthread`): 24 threads de CPU mais RAM com padrão verificado.
+- **Monitor de estabilidade permanente**: `stab.timer` (a cada 60 s, uma linha com `fsync`: boot, uptime, carga,
+  temperaturas, GPU) e `stab-boot.service` (a cada boot anota se o anterior terminou limpo e a última linha do monitor).
 
 ### Plugin do OBS some depois de trocar o driver
 
