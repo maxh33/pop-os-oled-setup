@@ -1,57 +1,30 @@
 #!/bin/bash
-# HDMI Audio Watchdog - checks and fixes audio if needed
-# Runs via systemd timer every 30 seconds, low resource usage
-# State-aware: respects user's choice of Bluetooth or HDMI output
+# HDMI Audio Watchdog - keeps audio on HDMI (TV + soundbar)
+# Runs via systemd timer every 30 seconds
 # State is managed by audio-switch.sh — watchdog only reads it, never writes it
 
-HDMI_SINK="alsa_output.pci-0000_0a_00.1.hdmi-stereo-extra1"
+# "bluetooth" mode: let the user's choice stand
+[ "$(cat "$HOME/.local/state/audio-output-mode" 2>/dev/null || echo hdmi)" = "hdmi" ] || exit 0
+
+# Detected at runtime: the PCI address in the sink name changes with GPU/board changes
+HDMI_SINK=$(pactl list sinks short 2>/dev/null | awk '$2 ~ /^alsa_output\..*hdmi/ {print $2; exit}')
+[ -n "$HDMI_SINK" ] || exit 0
+
 LOG_FILE="$HOME/.local/state/hdmi-audio-fix.log"
+log() { echo "$(date): $1" >> "$LOG_FILE" 2>/dev/null || true; }
 
-log() {
-    echo "$(date): $1" >> "$LOG_FILE" 2>/dev/null || true
-}
-
-# Check if HDMI sink exists
-if ! pactl list sinks short 2>/dev/null | grep -q "$HDMI_SINK"; then
-    log "Watchdog - HDMI sink missing, running fix..."
-    /home/max/.local/bin/hdmi-audio-fix.sh
-    exit 0
+if [ "$(pactl get-default-sink 2>/dev/null)" != "$HDMI_SINK" ]; then
+    log "Watchdog - setting default to $HDMI_SINK"
+    pactl set-default-sink "$HDMI_SINK"
 fi
 
-# Read audio output mode — only audio-switch.sh writes this
-AUDIO_MODE=$(cat "$HOME/.local/state/audio-output-mode" 2>/dev/null || echo "hdmi")
+# Lecture mode keeps streams where they are. Check the process, not a flag file that can go stale
+pgrep -f 'lecture-capture\.sh' > /dev/null && exit 0
 
-if [ "$AUDIO_MODE" = "hdmi" ]; then
-    # Mode is HDMI — enforce it (TV power cycle recovery)
-    # Check where streams are actually going
-    HDMI_INDEX=$(pactl list sinks short 2>/dev/null | grep "$HDMI_SINK" | awk '{print $1}')
-    # In lecture mode, skip all stream routing — lecture-capture.sh handles Brave
-    LECTURE_MODE=$(cat "$HOME/.local/state/lecture-mode" 2>/dev/null || echo "off")
-    if [ "$LECTURE_MODE" != "on" ]; then
-        NON_HDMI_INPUTS=$(pactl list sink-inputs short 2>/dev/null | grep -v "$HDMI_INDEX" | awk '{print $1}')
-        if [ -n "$NON_HDMI_INPUTS" ]; then
-            log "Watchdog - found streams not on HDMI, moving them..."
-            for input in $NON_HDMI_INPUTS; do
-                pactl move-sink-input "$input" "$HDMI_INDEX" 2>/dev/null
-            done
-        fi
-    fi
-
-    # Also ensure configured default is HDMI
-    configured_default=$(pw-metadata -n default 2>/dev/null | grep "default.configured.audio.sink" | grep -oP 'name":"[^"]+' | cut -d'"' -f3)
-    if [ "$configured_default" != "$HDMI_SINK" ]; then
-        log "Watchdog - HDMI not configured default, setting..."
-        pw-metadata -n default 0 default.configured.audio.sink "{\"name\":\"$HDMI_SINK\"}" 2>/dev/null
-        pw-metadata -n default 0 default.audio.sink "{\"name\":\"$HDMI_SINK\"}" 2>/dev/null
-    fi
-fi
-# If mode is "bluetooth", do nothing with defaults — let the user's choice stand
-
-# Always keep HDMI pin enabled (needed for instant switching back)
-pin_status=$(sudo /usr/bin/hda-verb /dev/snd/hwC0D0 0x05 0xf07 0 2>/dev/null | grep "value" | awk '{print $3}')
-if [ "$pin_status" = "0x0" ]; then
-    log "Watchdog - Pin disabled, re-enabling..."
-    sudo /usr/bin/hda-verb /dev/snd/hwC0D0 0x05 0x707 0x40 2>/dev/null
-fi
+HDMI_INDEX=$(pactl list sinks short | awk -v name="$HDMI_SINK" '$2 == name {print $1}')
+for input in $(pactl list sink-inputs short | awk -v sink="$HDMI_INDEX" '$2 != sink {print $1}'); do
+    log "Watchdog - moving stream $input to HDMI"
+    pactl move-sink-input "$input" "$HDMI_SINK" 2>/dev/null
+done
 
 exit 0

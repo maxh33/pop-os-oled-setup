@@ -8,7 +8,8 @@
 #   audio-switch.sh bluetooth punker # Switch to specific BT device (name filter)
 
 STATE_FILE="$HOME/.local/state/audio-output-mode"
-HDMI_SINK="alsa_output.pci-0000_0a_00.1.hdmi-stereo-extra1"
+# Detected at runtime: the PCI address in the sink name changes with GPU/board changes
+HDMI_SINK=$(pactl list sinks short 2>/dev/null | awk '$2 ~ /^alsa_output\..*hdmi/ {print $2; exit}')
 LOG_FILE="$HOME/.local/state/hdmi-audio-fix.log"
 
 log() { echo "$(date): $1" >> "$LOG_FILE" 2>/dev/null || true; }
