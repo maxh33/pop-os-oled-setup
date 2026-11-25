@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """LG Buddy: detecta SO Shift/Ctrl pressionado em TECLADO FISICO (ignora mouse, movimento, rolagem e dispositivos virtuais).
 Fase 1 (LOG_ONLY=1): apenas registra 'gatilho' no journal; nao aciona a TV. Nunca registra qual tecla (so o tipo)."""
-import os,re,struct,select,time,sys,errno
+import os,re,struct,select,time,sys,errno,subprocess
 LOG_ONLY=os.environ.get("LOG_ONLY","1")=="1"
 TRIG={29:"ctrl",97:"ctrl",42:"shift",54:"shift"}          # KEY_LEFTCTRL/RIGHTCTRL/LEFTSHIFT/RIGHTSHIFT
 STATE="/run/user/%d/lg_buddy/screen_off_by_us"%os.getuid()
@@ -60,5 +60,6 @@ def main():
                     off=os.path.exists(STATE)
                     log("gatilho=%s tv_apagada_pelo_lgbuddy=%s modo=%s"%(TRIG[c],off,"LOG_ONLY" if LOG_ONLY else "ACAO"))
                     if not LOG_ONLY and off:
-                        log("acao: ligar TV (nao implementada nesta fase)")
+                        r=subprocess.run(["systemctl","--user","start","--no-block","lg-buddy-wake.service"],capture_output=True,text=True)
+                        log("acao: lg-buddy-wake.service iniciado rc=%d %s"%(r.returncode,r.stderr.strip()[:80]))
 if __name__=="__main__": main()

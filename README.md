@@ -69,6 +69,7 @@ paplay /usr/share/sounds/freedesktop/stereo/complete.oga
 | [34-remote-access-ssh-tailscale-rustdesk.md](docs/34-remote-access-ssh-tailscale-rustdesk.md) | Acesso remoto sem supervisão: SSH + Tailscale, RustDesk no Wayland (portal), energia COSMIC |
 | [35-nvidia-upgrade-black-screen-recovery.md](docs/35-nvidia-upgrade-black-screen-recovery.md) | Tela preta após `apt full-upgrade` (módulo NVIDIA 595 com userland 580), greeter sem monitor, Tailscale SSH `check` |
 | [36-lg-buddy-wake-key-only.md](docs/36-lg-buddy-wake-key-only.md) | LG Buddy: acender a TV só com Shift/Ctrl (não com movimento do mouse), armadilhas do evdev e do systemd de usuário |
+| [37-tela-sem-sinal-rx6400-edid.md](docs/37-tela-sem-sinal-rx6400-edid.md) | RX 6400 sem EDID na HDMI: `disconnected`, 640x480, forçar conector e `video=` no kernel |
 
 ## Key Fix Summary
 

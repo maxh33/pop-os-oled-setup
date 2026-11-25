@@ -1,8 +1,8 @@
 [Unit]
 StartLimitIntervalSec=0
-Description=LG Buddy: gatilho de acordar a TV so por Shift/Ctrl (fase 1: somente log)
+Description=LG Buddy: gatilho de acordar a TV so por Shift/Ctrl (fase 2: aciona a TV)
 [Service]
-Environment=LOG_ONLY=1
+Environment=LOG_ONLY=0
 ExecStart=/usr/bin/python3 %h/.local/bin/lg-buddy-key-wake.py
 Restart=always
 RestartSec=2

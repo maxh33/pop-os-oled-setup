@@ -1,0 +1,6 @@
+[Unit]
+Description=LG Buddy: acender a TV (acionado pelo gatilho Shift/Ctrl)
+[Service]
+Type=oneshot
+ExecStart=%h/.local/bin/lg-buddy-wake.sh
+TimeoutStartSec=120

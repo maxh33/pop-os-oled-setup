@@ -5,6 +5,7 @@ tv_mac="XX:XX:XX:XX:XX:XX"
 input="HDMI_4"
 STATE_DIR="/run/user/$(id -u)/lg_buddy"
 STATE_FILE="${STATE_DIR}/screen_off_by_us"
+BSCPYLGTV="/home/max/.local/share/lg-buddy-venv/bin/bscpylgtvcommand"
 
 # Only wake the TV if we were the ones who turned it off
 if [ ! -f "$STATE_FILE" ]; then
@@ -14,22 +15,21 @@ fi
 
 echo "Turning TV on (screen wake)..."
 
-# Remove state file first (before potentially slow operations)
-rm -f "$STATE_FILE"
 
-# Send Wake-on-LAN to wake the TV from standby
+# Send Wake-on-LAN packets (burst of 3 packets on subnet broadcast)
 for _ in 1 2 3; do
-    wakeonlan "$tv_mac" 2>/dev/null
+    wakeonlan -i 192.168.X.255 "$tv_mac" 2>/dev/null || wakeonlan "$tv_mac" 2>/dev/null
     sleep 0.3
 done
 
 # Wait for TV to accept WebSocket connections (retry loop for warm boot/EWS startup)
 sleep 4
 success=false
-for i in {1..6}; do
-    if /usr/bin/LG_Buddy_PIP/bin/bscpylgtvcommand "$tv_ip" set_input "$input" 2>/dev/null; then
+for i in {1..7}; do
+    if "$BSCPYLGTV" "$tv_ip" set_input "$input" 2>/dev/null; then
         echo "TV switched to $input successfully (attempt $i)."
         success=true
+        rm -f "$STATE_FILE"
         break
     fi
     sleep 2

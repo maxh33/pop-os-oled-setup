@@ -51,7 +51,7 @@ fazem nada sozinhos em nenhum aplicativo.
   potencial; o serviço roda sem rede (`RestrictAddressFamilies=AF_UNIX`), com `NoNewPrivileges`, `ProtectSystem=strict`
   e `ProtectHome=read-only`.
 
-### Correções da auditoria ainda a aplicar nas fases 2 e 3
+### Correções da auditoria (aplicadas nas fases 2 e 3)
 
 - Drop-in do `LG_Buddy_screen.service` precisa de `ExecStart=` **vazio** antes da linha nova (senão há dois
   `ExecStart`). Reversão limpa: `systemctl --user revert LG_Buddy_screen.service`.
@@ -72,6 +72,19 @@ fazem nada sozinhos em nenhum aplicativo.
 Com `LOG_ONLY=1`: Shift pressionado gerou `gatilho=shift tv_apagada_pelo_lgbuddy=False`; movimento do mouse, rolagem,
 cliques e digitação não geraram nenhum registro. O **Ctrl** ainda precisa de uma confirmação (o intervalo mínimo de 5 s
 vale para qualquer gatilho, então um Ctrl logo depois do Shift é ignorado de propósito).
+
+## Fases 2 e 3 (instaladas em 2026-11-24, ainda sem teste com a TV)
+
+Os scripts **ativos** são as cópias de usuário em `~/.local/bin` (não os de `/usr/bin`), com backups `*.bak-20261124-0639`.
+Em `configs/lg-buddy/`: `LG_Buddy_Screen_Monitor` reescrito (só o desligar por inatividade, embrulhado em `flock`),
+`LG_Buddy_Screen_On` (apaga o arquivo de estado só depois do `set_input` dar certo), `lg-buddy-wake.sh` +
+`lg-buddy-wake.service` (oneshot que liga a TV e, se existir o conector da TV, roda o `tv-wake-recover.sh`) e o
+`lg-buddy-key-wake.py` em modo ação (`LOG_ONLY=0`: Shift/Ctrl com o arquivo de estado presente dispara o wake).
+O `tv-wake-recover.service` antigo foi desativado.
+
+Pendente: desligar a TV com `LG_Buddy_Screen_Off`, mexer/rolar/clicar o mouse (a TV deve continuar apagada) e apertar
+Shift ou Ctrl (deve ligar em ~10 s). Atenção: `lg-buddy-wake.sh` e `tv-wake-recover.sh` ainda citam o conector `DP-3`
+(saída da A2000); com a RX 6400 o conector é `HDMI-A-1`.
 
 ## Reversão
 
